@@ -7,8 +7,10 @@ import com.informatikgame.world.UpgradeType;
 public class Character {
 
     protected int lifeTotal;
+    protected int maxLife;
     protected int armourValue;
     protected int initiative;
+    private int randomizedInitiative;
     protected int attack;
     protected int defense;
     protected int damage;
@@ -20,8 +22,10 @@ public class Character {
     // Constructor
     public Character(int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int numW6, int finteLevel, int wuchtschlagLevel, String type) {
         this.lifeTotal = lifeTotal;
+        this.maxLife = lifeTotal;
         this.armourValue = armourValue;
         this.initiative = initiative;
+        this.setRandomizedInitiative(0);
         this.attack = attack;
         this.defense = defense;
         this.damage = damage;
@@ -29,6 +33,16 @@ public class Character {
         this.finteLevel = finteLevel;
         this.wuchtschlagLevel = wuchtschlagLevel;
         this.type = type;
+    }
+
+    public int getRandomizedInitiative() {
+        return randomizedInitiative;
+
+    }
+
+    public void setRandomizedInitiative(int randomizedInitiative) {
+        this.randomizedInitiative = randomizedInitiative;
+
     }
 
     //is alive
@@ -72,7 +86,7 @@ public class Character {
 
     //Upgrade Character
     public void upgrade(int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int finteLevel, int wuchtschlagLevel) {
-        this.lifeTotal += lifeTotal;
+        this.lifeTotal = Math.min(this.lifeTotal + lifeTotal, this.maxLife);
         this.armourValue += armourValue;
         this.initiative += initiative;
         this.attack += attack;
@@ -84,7 +98,7 @@ public class Character {
 
     //Upgrade Character with Upgrade Type
     public void upgrade(UpgradeType upgradeType) {
-        upgrade(upgradeType.lifeTotal, upgradeType.armourValue, upgradeType.initiative, upgradeType.attack, upgradeType.defense, upgradeType.damage, upgradeType.finteLevel, upgradeType.wuchtschlagLevel);
+        upgrade(upgradeType.lifeTotal, upgradeType.maxLife, upgradeType.armourValue, upgradeType.initiative, upgradeType.attack, upgradeType.defense, upgradeType.damage, upgradeType.finteLevel, upgradeType.wuchtschlagLevel);
     }
 
     // Test support Methoden für die Unit Tests
@@ -102,7 +116,7 @@ public class Character {
         return Math.max(min, Math.min(max, value));
     }
 
-    public static Comparator<Character> initiativeComparator = (Character c1, Character c2) -> Integer.compare(c2.initiative, c1.initiative);
+    public static Comparator<Character> initiativeComparator = (Character c1, Character c2) -> Integer.compare(c2.getRandomizedInitiative(), c1.getRandomizedInitiative());
 
     // ===== GETTER METHODEN =====
     public int getLifeTotal() {
