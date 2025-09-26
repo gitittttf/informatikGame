@@ -73,7 +73,8 @@ public class Character {
     }
     
     //Upgrade Character
-    public void upgrade(int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int finteLevel, int wuchtschlagLevel) {
+    public void upgrade(int lifeTotal, int maxLife, int armourValue, int initiative, int attack, int defense, int damage, int finteLevel, int wuchtschlagLevel) {
+        this.maxLife += maxLife;
         this.lifeTotal = Math.max(this.lifeTotal + lifeTotal, this.maxLife);
         this.armourValue += armourValue;
         this.initiative += initiative;
@@ -87,7 +88,7 @@ public class Character {
     //Upgrade Character with Upgrade Type
     public void upgrade(UpgradeType upgradeType)
     {
-        upgrade(upgradeType.lifeTotal, upgradeType.armourValue, upgradeType.initiative, upgradeType.attack, upgradeType.defense, upgradeType.damage, upgradeType.finteLevel, upgradeType.wuchtschlagLevel);
+        upgrade(upgradeType.lifeTotal, upgradeType.maxLife, upgradeType.armourValue, upgradeType.initiative, upgradeType.attack, upgradeType.defense, upgradeType.damage, upgradeType.finteLevel, upgradeType.wuchtschlagLevel);
     }
 
     //Utilities
