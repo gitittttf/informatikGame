@@ -3,8 +3,10 @@ import java.util.*;
 
 public class Character {
     int lifeTotal;
+    int maxLife;
     int armourValue;
     int initiative;
+    int randomizedInitiative;
     int attack;
     int defense;
     int damage;
@@ -16,8 +18,10 @@ public class Character {
     // Constructor
     public Character(int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int numW6, int finteLevel, int wuchtschlagLevel, String type) {
         this.lifeTotal = lifeTotal;
+        this.maxLife = lifeTotal;
         this.armourValue = armourValue;
         this.initiative = initiative;
+        this.randomizedInitiative = 0;
         this.attack = attack;
         this.defense = defense;
         this.damage = damage;
@@ -70,7 +74,7 @@ public class Character {
     
     //Upgrade Character
     public void upgrade(int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int finteLevel, int wuchtschlagLevel) {
-        this.lifeTotal += lifeTotal;
+        this.lifeTotal = Math.max(this.lifeTotal + lifeTotal, this.maxLife);
         this.armourValue += armourValue;
         this.initiative += initiative;
         this.attack += attack;
@@ -94,7 +98,7 @@ public class Character {
     public static Comparator<Character> initiativeComparator = new Comparator<Character>() {
         @Override
         public int compare(Character c1, Character c2) {
-            return Integer.compare(c2.initiative, c1.initiative);
+            return Integer.compare(c2.randomizedInitiative, c1.randomizedInitiative);
         }
     };
 

@@ -13,11 +13,16 @@ public class FightManager {
     }
 
     public boolean fight(EnemyType[] enemyTypesLeftToRight) {
-        //Create list with all enemy objects enemiesLeftToRight for fight
+        //Create list with all enemy objects enemiesLeftToRight for fight and generate randomized initiative
         this.enemiesLeftToRight = new ArrayList(enemyTypesLeftToRight.length);
         for (EnemyType enemy : enemyTypesLeftToRight) {
             this.enemiesLeftToRight.add(new Enemy(enemy));
+            Enemy newestEnemy = enemiesLeftToRight.get(enemiesLeftToRight.size()-1);
+            newestEnemy.randomizedInitiative = newestEnemy.initiative + (int)Math.round(Math.random() * 5 + 1);
         }
+        
+        //randomized initiative for player
+        this.player.randomizedInitiative = this.player.initiative + (int)Math.round(Math.random() * 5 + 1);
         
         System.out.println("");
         System.out.println("Der Kampf beginnt!");
@@ -120,6 +125,5 @@ public class FightManager {
             }
         }
         this.enemiesLeftToRight.removeIf(character -> !character.isAlive());
-
     }
 }
