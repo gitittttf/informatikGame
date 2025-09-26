@@ -5,7 +5,7 @@
             "type": "java",
             "name": "Launch Main with javaw",
             "request": "launch",
-            "mainClass": "Main",
+            "mainClass": "com.informatikgame.core.Main",
             "projectName": "informatikgame",
             "vmArgs": "-Dlanterna.terminal-type=swing -Dfile.encoding=UTF-8",
             "console": "internalConsole",
