@@ -3,7 +3,7 @@ public enum StoryDatabank {
     // ===================== INTRO =====================
     INTRO_ROOM("""
         Du wachst benommen in einem zerschlagenen Labor auf. Blutspuren ziehen sich über den Boden, und flackernde Lichter tauchen alles in grelles Rot. 
-        Eine Tür steht einen Spalt offen – dein einziger Ausweg. Ein einsamer Zombie schlurft durch die Trümmer. Du greifst nach einer Eisenstange ...
+        Eine Tür steht einen Spalt offen – dein einziger Ausweg. Ein einsamer Zombie schlurft durch die Trümmer. Du greifst nach deiner Waffe ...
     """),
 
     INTRO_ROOM_END("""
@@ -28,7 +28,7 @@ public enum StoryDatabank {
 
     PANTRY_1_END("""
         Nach einem harten Kampf bist du erschöpft, aber deine Angriffe wirken nun stärker. (+2 Damage)
-        Außerdem findest du auf dem Boden einen Erste-Hilfe-Koffer, der deine Lebensenergie auffüllt. (+5 HP)
+        Außerdem findest du auf dem Boden einen Heiltrank, der deine Lebensenergie auffüllt. (+5 HP)
     """),
 
     // ===================== LIBRARY =====================
