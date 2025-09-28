@@ -20,7 +20,7 @@ public enum StoryDatabank {
     """),
     
     PANTRY_1_END("""
-                Du konntest nach einem harten Kampf die Zombies bewältigen, aber du bist sehr geschwächt. Zum Glück findest du auf dem Boden einen Erste Hilfe Koffer.
+                Du konntest nach einem harten Kampf die Zombies bewältigen, aber du bist sehr geschwächt. Zum Glück findest du auf dem Boden einen Erste Hilfe Koffer (+5 HP).
                  """),
         
     LIBRARY_ROOM("""
