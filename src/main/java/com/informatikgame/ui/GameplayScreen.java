@@ -671,7 +671,8 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             }
 
             case MAP -> {
-                if (keyStroke.getKeyType() == KeyType.Escape) {
+                if (keyStroke.getKeyType() == KeyType.Character
+                        && (keyStroke.getCharacter() == 'x' || keyStroke.getCharacter() == 'X')) {
                     currentState = previousState;
                 }
             }
@@ -975,7 +976,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
         // Draw exit instructions
         graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-        String exitText = "Drücke ESC um zurückzukehren";
+        String exitText = "Drücke X um zurückzukehren";
         if (animationFrame % 30 < 15) {
             drawCentered(graphics, exitText, size.getRows() - 3);
         }
