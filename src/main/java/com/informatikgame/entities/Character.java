@@ -123,7 +123,7 @@ public class Character {
         } else {
             // Failed attack messages
             if (finte > 0 || wuchtschlag > 0) {
-                logMessageWithDelay("Die Spezialangriffe sind fehlgeschlagen!", CombatMessageType.SPECIAL_MOVE, currentDelay);
+                logMessageWithDelay("Der Spezialangriff ist fehlgeschlagen!", CombatMessageType.SPECIAL_MOVE, currentDelay);
                 currentDelay += 600;
             }
             logMessageWithDelay(this.type + " scheiterte " + target.type + " anzugreifen.", actionType, currentDelay);

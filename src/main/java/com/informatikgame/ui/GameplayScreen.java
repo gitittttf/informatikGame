@@ -65,7 +65,6 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     private UIState currentState = UIState.EXPLORATION;
     private UIState previousState = UIState.EXPLORATION; // Store state before showing map
 
-    // Placeholder map string (replace with your actual map content)
     private final String mapContent
             = """
               +-------------------------------------------------[KARTE]----------------------------------------------------+
@@ -616,16 +615,24 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
     @Override
     public void handleInput(KeyStroke keyStroke) {
+        if (keyStroke.getKeyType() == KeyType.Character && (keyStroke.getCharacter() == 'm' || keyStroke.getCharacter() == 'M')) {
+            if (currentState != UIState.STORY_DISPLAY && currentState != UIState.GAME_OVER && currentState != UIState.VICTORY && currentState != UIState.MAP) {
+                previousState = currentState;
+                currentState = UIState.MAP;
+                return;
+            }
+        }
         switch (currentState) {
             case STORY_DISPLAY -> {
                 if (keyStroke.getKeyType() == KeyType.Enter) {
                     if (waitingForStoryInput) {
                         // checken ob exit story
                         if (isExitStory) {
-                            // Exit story finished
+                            // Exit story finished#
+                            // Reset flag
+                            isExitStory = false;
                             currentState = UIState.ROOM_TRANSITION;
                             gameManager.continueAfterExitStory();
-                            isExitStory = false; // Reset flag
                         } else {
                             // Room story finished
                             currentState = UIState.EXPLORATION;
@@ -664,11 +671,8 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             }
 
             case MAP -> {
-                // Exit map on ESC or any key
-                if (keyStroke.getKeyType() == KeyType.Escape
-                        || keyStroke.getKeyType() == KeyType.Enter
-                        || keyStroke.getKeyType() == KeyType.Character) {
-                    hideMap();
+                if (keyStroke.getKeyType() == KeyType.Escape) {
+                    currentState = previousState;
                 }
             }
 
@@ -951,23 +955,29 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     private void drawMap(TextGraphics graphics) {
         TerminalSize size = screenManager.getSize();
 
-        // Clear the screen with background color
-        graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
-        graphics.fill(' ');
-
-        // Draw the map content
-        graphics.setForegroundColor(TextColor.ANSI.WHITE);
-        String[] mapLines = mapContent.split("\\n");
-
-        // Center the map on screen
-        int startY = Math.max(0, (size.getRows() - mapLines.length) / 2);
-        int startX = Math.max(0, (size.getColumns() - 78) / 2); // Map is ~78 chars wide
-
-        for (int i = 0; i < mapLines.length && startY + i < size.getRows(); i++) {
-            String line = mapLines[i];
-            if (startX + line.length() <= size.getColumns()) {
-                graphics.putString(new TerminalPosition(startX, startY + i), line);
+        // Fill background with dark color
+        graphics.setBackgroundColor(new TextColor.RGB(10, 10, 20));
+        for (int y = 0; y < size.getRows(); y++) {
+            for (int x = 0; x < size.getColumns(); x++) {
+                graphics.setCharacter(x, y, ' ');
             }
+        }
+
+        // Draw map content
+        String[] mapLines = mapContent.split("\n");
+        int startY = (size.getRows() - mapLines.length) / 2;
+        int startX = (size.getColumns() - mapLines[0].length()) / 2;
+
+        graphics.setForegroundColor(ScreenManager.PRIMARY_COLOR);
+        for (int i = 0; i < mapLines.length; i++) {
+            graphics.putString(new TerminalPosition(startX, startY + i), mapLines[i]);
+        }
+
+        // Draw exit instructions
+        graphics.setForegroundColor(TextColor.ANSI.YELLOW);
+        String exitText = "Drücke ESC um zurückzukehren";
+        if (animationFrame % 30 < 15) {
+            drawCentered(graphics, exitText, size.getRows() - 3);
         }
     }
 
