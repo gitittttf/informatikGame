@@ -8,8 +8,8 @@ public enum RoomUpgrade {
     INTRO_ROOM_UPGRADE(UpgradeType.LIFE_UPGRADE), // +5 HP
     FLOOR_ROOM_UPGRADE(UpgradeType.LIFE_UPGRADE), // +5 HP
     PANTRY_1_UPGRADE(UpgradeType.PANTRY_COMPOUND_UPGRADE), // +2 Damage und +5 HP
-    LIBRARY_ROOM_UPGRADE(UpgradeType.SKILL_UPGRADE), // +1 Fintelevel
-    DINING_HALL_UPGRADE(UpgradeType.ATTACK_UPGRADE), // +1 Attack
+    LIBRARY_ROOM_UPGRADE(UpgradeType.SKILL_UPGRADE), // +1 Fintelevel und +1 Wuchtschlaglevel
+    DINING_HALL_UPGRADE(UpgradeType.ATTACK_UPGRADE), // +2 Attack
     LABORATORY_UPGRADE(null), // Kein upgrade
     CORRIDOR_UPGRADE(UpgradeType.ARMOUR_UPGRADE), // +3 Armour
     PANTRY_2_UPGRADE(null), // Kein upgrade
