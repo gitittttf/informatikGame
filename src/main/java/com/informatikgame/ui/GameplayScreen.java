@@ -9,6 +9,7 @@ import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
+import com.informatikgame.combat.FightManager;
 import com.informatikgame.core.GameManager;
 import com.informatikgame.entities.Enemy;
 
@@ -18,6 +19,10 @@ import com.informatikgame.entities.Enemy;
 public class GameplayScreen extends GameScreen implements GameManager.GameEventListener {
 
     private GameManager gameManager;
+
+    public void setGameManager(GameManager gameManager) {
+        this.gameManager = gameManager;
+    }
     private List<String> combatLog;
     private String currentRoomName = "";
     private String currentRoomDescription = "";
@@ -63,18 +68,78 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         combatLog.add("=== Willkommen im Dungeon ===");
 
         // GameManager initialisieren und Listener setzen
-        gameManager = new GameManager();
         gameManager.setEventListener(this);
         gameManager.startGame();
     }
+
+    // Combat message with color information
+    private static class ColoredCombatMessage {
+
+        public final String message;
+        public final FightManager.CombatMessageType type;
+
+        public ColoredCombatMessage(String message, FightManager.CombatMessageType type) {
+            this.message = message;
+            this.type = type;
+        }
+    }
+
+    // Queued combat message with timestamp
+    private static class QueuedCombatMessage {
+
+        public final String message;
+        public final FightManager.CombatMessageType type;
+        public final long displayTime;
+
+        public QueuedCombatMessage(String message, FightManager.CombatMessageType type, long displayTime) {
+            this.message = message;
+            this.type = type;
+            this.displayTime = displayTime;
+        }
+    }
+
+    private List<ColoredCombatMessage> coloredCombatLog = new ArrayList<>();
+    private List<QueuedCombatMessage> messageQueue = new ArrayList<>();
+    private long combatStartTime = 0;
+    private long lastScheduledDisplayTime = 0;
 
     // === GameEventListener Implementation ===
     @Override
     public void onCombatLogUpdate(String message) {
         combatLog.add(message);
-        // Nur die letzten 10 Nachrichten behalten
-        if (combatLog.size() > 10) {
+        coloredCombatLog.add(new ColoredCombatMessage(message, FightManager.CombatMessageType.PLAYER_ACTION));
+        // Nur die letzten 15 Nachrichten behalten
+        if (combatLog.size() > 15) {
             combatLog.remove(0);
+        }
+        if (coloredCombatLog.size() > 15) {
+            coloredCombatLog.remove(0);
+        }
+    }
+
+    // New method for colored combat messages
+    public void onCombatMessage(String message, FightManager.CombatMessageType messageType) {
+        displayMessage(message, messageType);
+    }
+
+    // New method for queued combat messages
+    public void onQueuedCombatMessage(String message, FightManager.CombatMessageType messageType, long delayMs) {
+        long currentTime = System.currentTimeMillis();
+        // Ensure messages are always scheduled after the last scheduled message
+        long displayTime = Math.max(currentTime, lastScheduledDisplayTime) + delayMs;
+        lastScheduledDisplayTime = displayTime;
+        messageQueue.add(new QueuedCombatMessage(message, messageType, displayTime));
+    }
+
+    private void displayMessage(String message, FightManager.CombatMessageType messageType) {
+        combatLog.add(message);
+        coloredCombatLog.add(new ColoredCombatMessage(message, messageType));
+        // Nur die letzten 15 Nachrichten behalten
+        if (combatLog.size() > 15) {
+            combatLog.remove(0);
+        }
+        if (coloredCombatLog.size() > 15) {
+            coloredCombatLog.remove(0);
         }
     }
 
@@ -86,7 +151,9 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         this.currentRoomDescription = gameManager.getRoomDescription();
         currentState = UIState.EXPLORATION;
 
-        combatLog.add(">>> Betreten: " + roomName);
+        String message = ">>> Betreten: " + roomName;
+        combatLog.add(message);
+        coloredCombatLog.add(new ColoredCombatMessage(message, FightManager.CombatMessageType.ROUND_START));
     }
 
     @Override
@@ -110,14 +177,20 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         currentState = UIState.COMBAT;
         inCombat = true;
         selectedEnemy = 0;
+        combatStartTime = System.currentTimeMillis();
+        lastScheduledDisplayTime = combatStartTime;
+        messageQueue.clear(); // Clear any previous queued messages
     }
 
     @Override
     public void onCombatEnd(boolean won) {
         inCombat = false;
+        messageQueue.clear(); // Clear any remaining queued messages
+        lastScheduledDisplayTime = 0; // Reset timeline
         if (won) {
             currentState = UIState.ROOM_TRANSITION;
-            combatLog.add(">>> Kampf gewonnen!");
+            String message = ">>> Kampf gewonnen!";
+            displayMessage(message, FightManager.CombatMessageType.COMBAT_END);
         }
     }
 
@@ -200,10 +273,10 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                 int mainAreaY = 3;
                 int columnWidth = size.getColumns() / 3;
 
-                drawPlayerPanel(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 5);
-                drawGameArea(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 5);
-                drawInfoPanel(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 5);
-                drawCombatLog(graphics, 0, size.getRows() - 5, size.getColumns(), 5);
+                drawPlayerPanel(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+                drawGameArea(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+                drawInfoPanel(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+                drawCombatLog(graphics, 0, size.getRows() - 15, size.getColumns(), 15); // TODO
             }
         }
     }
@@ -232,10 +305,10 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         graphics.setForegroundColor(statusColor);
         graphics.putString(new TerminalPosition(size.getColumns() / 2 - status.length() / 2, 0), status);
 
-        // HP-Anzeige
+        // Map Shortcutanzeige
         graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-        String hp = String.format("HP: %d/%d", playerHP, playerMaxHP);
-        graphics.putString(new TerminalPosition(size.getColumns() - hp.length() - 2, 0), hp);
+        String mapShortcut = "M - Map";
+        graphics.putString(new TerminalPosition(size.getColumns() - mapShortcut.length() - 2, 0), mapShortcut);
 
         // Trennlinie
         graphics.setForegroundColor(ScreenManager.PRIMARY_COLOR);
@@ -547,13 +620,12 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     // Combat input state
     private enum CombatInputState {
         SELECTING_ENEMY,
-        SELECTING_FINTE,
-        SELECTING_WUCHTSCHLAG
+        SELECTING_ATTACK_TYPE;
     }
+
     private CombatInputState combatInputState = CombatInputState.SELECTING_ENEMY;
     private int selectedEnemyIndex = 0;
-    private int selectedFinteLevel = 0;
-    private int selectedWuchtschlagLevel = 0;
+    private FightManager.AttackType selectedAttackType = FightManager.AttackType.NORMAL;
 
     private void handleCombatInput(KeyStroke keyStroke) {
         if (currentEnemies.length == 0) {
@@ -577,58 +649,55 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                         // Invalid input, ignore
                     }
                 } else if (keyStroke.getKeyType() == KeyType.Enter) {
-                    combatInputState = CombatInputState.SELECTING_FINTE;
-                    selectedFinteLevel = 0;
+                    combatInputState = CombatInputState.SELECTING_ATTACK_TYPE;
+                    selectedAttackType = FightManager.AttackType.NORMAL;
                 }
             }
-            case SELECTING_FINTE -> {
-                int maxFinte = gameManager.getPlayer().getFinteLevel();
-                if (keyStroke.getKeyType() == KeyType.ArrowLeft && selectedFinteLevel > 0) {
-                    selectedFinteLevel--;
-                } else if (keyStroke.getKeyType() == KeyType.ArrowRight && selectedFinteLevel < maxFinte) {
-                    selectedFinteLevel++;
-                } else if (keyStroke.getKeyType() == KeyType.Character) {
-                    // Allow number key selection
-                    try {
-                        int level = Character.getNumericValue(keyStroke.getCharacter());
-                        if (level >= 0 && level <= maxFinte) {
-                            selectedFinteLevel = level;
+            case SELECTING_ATTACK_TYPE -> {
+                if (null != keyStroke.getKeyType()) {
+                    switch (keyStroke.getKeyType()) {
+                        case ArrowLeft -> // Cycle backwards through attack types
+                            selectedAttackType = switch (selectedAttackType) {
+                                case NORMAL ->
+                                    FightManager.AttackType.WUCHTSCHLAG;
+                                case FINTE ->
+                                    FightManager.AttackType.NORMAL;
+                                case WUCHTSCHLAG ->
+                                    FightManager.AttackType.FINTE;
+                            };
+                        case ArrowRight -> // Cycle forwards through attack types
+                            selectedAttackType = switch (selectedAttackType) {
+                                case NORMAL ->
+                                    FightManager.AttackType.FINTE;
+                                case FINTE ->
+                                    FightManager.AttackType.WUCHTSCHLAG;
+                                case WUCHTSCHLAG ->
+                                    FightManager.AttackType.NORMAL;
+                            };
+                        case Character -> {
+                            // Allow number key selection: 1=Normal, 2=Finte, 3=Wuchtschlag
+                            char ch = keyStroke.getCharacter();
+                            switch (ch) {
+                                case '1' ->
+                                    selectedAttackType = FightManager.AttackType.NORMAL;
+                                case '2' ->
+                                    selectedAttackType = FightManager.AttackType.FINTE;
+                                case '3' ->
+                                    selectedAttackType = FightManager.AttackType.WUCHTSCHLAG;
+                            }
                         }
-                    } catch (Exception e) {
-                        // Invalid input, ignore
-                    }
-                } else if (keyStroke.getKeyType() == KeyType.Enter) {
-                    combatInputState = CombatInputState.SELECTING_WUCHTSCHLAG;
-                    selectedWuchtschlagLevel = 0;
-                } else if (keyStroke.getKeyType() == KeyType.Escape) {
-                    combatInputState = CombatInputState.SELECTING_ENEMY;
-                }
-            }
-            case SELECTING_WUCHTSCHLAG -> {
-                int maxWuchtschlag = gameManager.getPlayer().getWuchtschlagLevel();
-                if (keyStroke.getKeyType() == KeyType.ArrowLeft && selectedWuchtschlagLevel > 0) {
-                    selectedWuchtschlagLevel--;
-                } else if (keyStroke.getKeyType() == KeyType.ArrowRight && selectedWuchtschlagLevel < maxWuchtschlag) {
-                    selectedWuchtschlagLevel++;
-                } else if (keyStroke.getKeyType() == KeyType.Character) {
-                    // Allow number key selection
-                    try {
-                        int level = Character.getNumericValue(keyStroke.getCharacter());
-                        if (level >= 0 && level <= maxWuchtschlag) {
-                            selectedWuchtschlagLevel = level;
+                        case Enter -> {
+                            // Execute the combat action
+                            gameManager.executeCombatAction(selectedEnemyIndex, selectedAttackType);
+                            combatInputState = CombatInputState.SELECTING_ENEMY;
+                            selectedEnemyIndex = 0;
+                            selectedAttackType = FightManager.AttackType.NORMAL;
                         }
-                    } catch (Exception e) {
-                        // Invalid input, ignore
+                        case Escape ->
+                            combatInputState = CombatInputState.SELECTING_ENEMY;
+                        default -> {
+                        }
                     }
-                } else if (keyStroke.getKeyType() == KeyType.Enter) {
-                    // Execute the combat action
-                    gameManager.executeCombatAction(selectedEnemyIndex, selectedFinteLevel, selectedWuchtschlagLevel);
-                    combatInputState = CombatInputState.SELECTING_ENEMY;
-                    selectedEnemyIndex = 0;
-                    selectedFinteLevel = 0;
-                    selectedWuchtschlagLevel = 0;
-                } else if (keyStroke.getKeyType() == KeyType.Escape) {
-                    combatInputState = CombatInputState.SELECTING_FINTE;
                 }
             }
         }
@@ -667,25 +736,24 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                     graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 1-" + currentEnemies.length);
                     graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Weiter");
                 }
-                case SELECTING_FINTE -> {
-                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Finte Level:");
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 0-" + gameManager.getPlayer().getFinteLevel());
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Weiter");
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 3), "ESC: Zurück");
-                }
-                case SELECTING_WUCHTSCHLAG -> {
-                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Wuchtschlag Level:");
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 0-" + gameManager.getPlayer().getWuchtschlagLevel());
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Angriff!");
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 3), "ESC: Zurück");
+                case SELECTING_ATTACK_TYPE -> {
+                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Wähle Angriff:");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 1-3");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "1=Normal 2=Finte 3=Wuchtschlag");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 3), "ENTER: Angriff! ESC: Zurück");
+
+                    // Show current selection
+                    String attackName = switch (selectedAttackType) {
+                        case NORMAL ->
+                            "Normal";
+                        case FINTE ->
+                            "Finte";
+                        case WUCHTSCHLAG ->
+                            "Wuchtschlag";
+                    };
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 4), "Gewählt: " + attackName);
                 }
             }
-
-            // Show current selection
-            graphics.setForegroundColor(TextColor.ANSI.CYAN);
-            graphics.putString(new TerminalPosition(x + 2, instructionY + 5),
-                    String.format("Ziel: %d, Finte: %d, Wuchtschlag: %d",
-                            selectedEnemyIndex + 1, selectedFinteLevel, selectedWuchtschlagLevel));
         }
     }
 
@@ -697,9 +765,38 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         graphics.putString(new TerminalPosition(x + 2, y), "[ INFO ]");
 
         if (inCombat && currentEnemies.length > 0) {
-            graphics.setForegroundColor(TextColor.ANSI.WHITE);
-            graphics.putString(new TerminalPosition(x + 2, y + 2), "Gegner:");
+            // Split the panel in half horizontally
+            int topHalfHeight = (height / 2) - 3;
+            int bottomHalfY = y + topHalfHeight;
+            int bottomHalfHeight = height - topHalfHeight;
 
+            // Draw horizontal separator line
+            graphics.setForegroundColor(ScreenManager.PRIMARY_COLOR);
+            for (int i = 1; i < width - 1; i++) {
+                graphics.setCharacter(x + i - 1, bottomHalfY, '═');
+            }
+            graphics.setCharacter(x, bottomHalfY, '╠');
+            graphics.setCharacter(x + width - 2, bottomHalfY, '╣');
+
+            // Top half: Detailed enemy info for selected enemy
+            if (selectedEnemyIndex >= 0 && selectedEnemyIndex < currentEnemies.length) {
+                Enemy selectedEnemy = currentEnemies[selectedEnemyIndex];
+
+                graphics.setForegroundColor(TextColor.ANSI.CYAN);
+                graphics.putString(new TerminalPosition(x + 2, y + 2), "Aktueller Gegner:");
+
+                // Enemy name/type
+                graphics.setForegroundColor(TextColor.ANSI.WHITE);
+                graphics.putString(new TerminalPosition(x + 2, y + 4), selectedEnemy.getType());
+
+                // Enemy HP bar
+                drawHealthBar(graphics, x + 2, y + 6, width - 6,
+                        "HP", selectedEnemy.getLifeTotal(), selectedEnemy.getMaxLife(), TextColor.ANSI.RED);
+            }
+
+            // Bottom half: Enemy list
+            graphics.setForegroundColor(TextColor.ANSI.WHITE);
+            graphics.putString(new TerminalPosition(x + 2, bottomHalfY + 1), "Alle Gegner:");
             for (int i = 0; i < currentEnemies.length; i++) {
                 Enemy enemy = currentEnemies[i];
                 TextColor color = (i == selectedEnemyIndex) ? TextColor.ANSI.CYAN : TextColor.ANSI.WHITE;
@@ -707,7 +804,10 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
                 String enemyInfo = String.format("%d. %s (%d HP)",
                         i + 1, enemy.getType(), enemy.getLifeTotal());
-                graphics.putString(new TerminalPosition(x + 2, y + 4 + i), enemyInfo);
+                int lineY = bottomHalfY + 3 + i;
+                if (lineY < y + height - 1) { // Make sure we don't draw outside the box
+                    graphics.putString(new TerminalPosition(x + 2, lineY), enemyInfo);
+                }
             }
         } else {
             graphics.setForegroundColor(TextColor.ANSI.WHITE);
@@ -722,18 +822,47 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         graphics.setForegroundColor(TextColor.ANSI.CYAN);
         graphics.putString(new TerminalPosition(x + 2, y), "[ KAMPF-LOG ]");
 
-        // Display recent combat log messages
-        graphics.setForegroundColor(TextColor.ANSI.WHITE);
+        // Display recent combat log messages with color coding
         int logStartY = y + 1;
         int maxLines = height - 2;
 
-        int startIndex = Math.max(0, combatLog.size() - maxLines);
-        for (int i = startIndex; i < combatLog.size(); i++) {
-            String message = combatLog.get(i);
+        int startIndex = Math.max(0, coloredCombatLog.size() - maxLines);
+        for (int i = startIndex; i < coloredCombatLog.size(); i++) {
+            ColoredCombatMessage coloredMessage = coloredCombatLog.get(i);
+            String message = coloredMessage.message;
             if (message.length() > width - 4) {
                 message = message.substring(0, width - 7) + "...";
             }
+
+            // Set color based on message type
+            TextColor messageColor = getColorForMessageType(coloredMessage.type);
+            graphics.setForegroundColor(messageColor);
             graphics.putString(new TerminalPosition(x + 2, logStartY + (i - startIndex)), message);
+        }
+    }
+
+    private TextColor getColorForMessageType(FightManager.CombatMessageType type) {
+        switch (type) {
+            case ROUND_START:
+                return TextColor.ANSI.CYAN;
+            case PLAYER_ACTION:
+                return TextColor.ANSI.GREEN;
+            case ENEMY_ACTION:
+                return TextColor.ANSI.RED;
+            case UPGRADE:
+                return TextColor.ANSI.MAGENTA;
+            case SPECIAL_MOVE:
+                return TextColor.ANSI.YELLOW;
+            case DAMAGE:
+                return new TextColor.RGB(255, 140, 0); // Orange
+            case DEFENSE:
+                return TextColor.ANSI.BLUE;
+            case COMBAT_START:
+                return new TextColor.RGB(255, 215, 0); // Gold
+            case COMBAT_END:
+                return new TextColor.RGB(0, 255, 127); // Spring green
+            default:
+                return TextColor.ANSI.WHITE;
         }
     }
 
@@ -808,6 +937,9 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     public void update() {
         animationFrame++;
 
+        // Process queued combat messages
+        processQueuedMessages();
+
         // Update story animation
         if (currentState == UIState.STORY_DISPLAY && !waitingForStoryInput) {
             storyAnimationFrame++;
@@ -816,6 +948,23 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                 visibleStoryLines++;
             }
         }
+    }
+
+    private void processQueuedMessages() {
+        if (messageQueue.isEmpty()) {
+            return;
+        }
+
+        long currentTime = System.currentTimeMillis();
+
+        // Process messages that are ready to be displayed
+        messageQueue.removeIf(queuedMessage -> {
+            if (currentTime >= queuedMessage.displayTime) {
+                displayMessage(queuedMessage.message, queuedMessage.type);
+                return true; // Remove from queue
+            }
+            return false; // Keep in queue
+        });
     }
 
     private void drawStoryDisplay(TextGraphics graphics) {
@@ -929,13 +1078,13 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             graphics.setForegroundColor(TextColor.ANSI.WHITE);
             graphics.putString(new TerminalPosition(promptX + 4, promptY + 1), promptText);
         } else {
-            promptText = "Story wird geladen...";
+            promptText = "Story wird geladen ";
             graphics.setForegroundColor(TextColor.ANSI.BLACK_BRIGHT);
             graphics.putString(new TerminalPosition(promptX + 2, promptY + 1), promptText);
 
             // Add loading dots animation
             int dots = (animationFrame / 10) % 4;
-            String dotString = " ".repeat(3 - dots) + ".".repeat(dots);
+            String dotString = ".".repeat(dots) + " ".repeat(3 - dots);
             graphics.putString(new TerminalPosition(promptX + promptText.length() + 3, promptY + 1), dotString);
         }
     }

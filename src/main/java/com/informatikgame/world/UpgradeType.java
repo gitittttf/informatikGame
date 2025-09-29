@@ -1,11 +1,17 @@
 package com.informatikgame.world;
 
 public enum UpgradeType {
-    //int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int finteLevel, int wuchtschlagLevel
-    FINTE_UPGRADE(0, 0, 0, 0, 0, 0, 0, 1, 0);
+    // lifeTotal, maxLife, armourValue, initiative, attack, defense, damage, finteLevel, wuchtschlagLevel
+    FINTE_UPGRADE(0, 0, 0, 0, 0, 0, 0, 1, 0),
+    LIFE_UPGRADE(5, 5, 0, 0, 0, 0, 0, 0, 0), // +5 HP
+    DAMAGE_UPGRADE(0, 0, 0, 0, 0, 0, 2, 0, 0), // +2 Damage
+    FINTE_SKILL_UPGRADE(0, 0, 0, 0, 0, 0, 0, 1, 0), // +1 Finte-Level
+    ARMOUR_UPGRADE(0, 0, 3, 0, 0, 0, 0, 0, 0), // +3 Armour
+    ATTACK_UPGRADE(0, 0, 0, 0, 1, 0, 0, 0, 0), // +1 Attack
+    PANTRY_COMPOUND_UPGRADE(5, 5, 0, 0, 0, 0, 2, 0, 0); // +5 HP und +2 Damage für PANTRY_1
 
-    public int lifeTotal;
     public int maxLife;
+    public int lifeTotal;
     public int armourValue;
     public int initiative;
     public int attack;
@@ -15,8 +21,8 @@ public enum UpgradeType {
     public int wuchtschlagLevel;
 
     UpgradeType(int lifeTotal, int maxLife, int armourValue, int initiative, int attack, int defense, int damage, int finteLevel, int wuchtschlagLevel) {
-        this.lifeTotal = lifeTotal;
         this.maxLife = maxLife;
+        this.lifeTotal = lifeTotal;
         this.armourValue = armourValue;
         this.initiative = initiative;
         this.attack = attack;

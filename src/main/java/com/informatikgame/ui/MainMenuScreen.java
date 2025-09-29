@@ -104,7 +104,6 @@ public class MainMenuScreen extends GameScreen {
                 drawCentered(graphics, titleArt[i], titleY + i + offset);
             } else {
                 // Normal: grüne Farbe mit Pulsieren
-                // int brightness2 = 150 + (int) (Math.cos(animationFrame * 0.2 + i) * 70);
                 int brightness = 150 + (int) (Math.sin(animationFrame * 0.2 + i) * 70);
                 graphics.setForegroundColor(new TextColor.RGB(0, brightness, 0));
                 drawCentered(graphics, titleArt[i], titleY + i);
@@ -157,7 +156,7 @@ public class MainMenuScreen extends GameScreen {
         graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
         graphics.setForegroundColor(TextColor.ANSI.YELLOW);
         String controls = "↑↓ Navigation | ENTER Auswählen | ESC Zurück";
-        drawCentered(graphics, controls, size.getRows() - 1);
+        drawCentered(graphics, controls, size.getRows() - 2);
     }
 
     @Override
@@ -179,7 +178,7 @@ public class MainMenuScreen extends GameScreen {
     private void executeOption() {
         switch (selectedOption) {
             case 0 -> // Neues Spiel
-                screenManager.switchToScreen("game");
+                screenManager.switchToScreen("characterSelection");
             case 1 -> {
             }
             case 2 -> // Einstellungen

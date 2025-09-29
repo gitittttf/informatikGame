@@ -30,7 +30,11 @@ public enum RoomType {
         EnemyType.BIG_ZOMBIE, EnemyType.BIG_ZOMBIE,
         EnemyType.BIG_ZOMBIE
     }),
-    PANTRY(new EnemyType[]{
+    PANTRY_1(new EnemyType[]{
+        EnemyType.MINI_ZOMBIE,
+        EnemyType.MINI_ZOMBIE
+    }),
+    PANTRY_2(new EnemyType[]{
         EnemyType.MINI_ZOMBIE,
         EnemyType.MINI_ZOMBIE
     }),

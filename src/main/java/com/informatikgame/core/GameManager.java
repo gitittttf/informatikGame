@@ -4,13 +4,17 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import com.informatikgame.combat.FightManager;
+import com.informatikgame.combat.FightManager.AttackType;
 import com.informatikgame.entities.Enemy;
 import com.informatikgame.entities.Player;
+import com.informatikgame.ui.GameplayScreen;
 import com.informatikgame.ui.StoryDatabank;
 import com.informatikgame.world.EnemyType;
 import com.informatikgame.world.PlayerType;
 import com.informatikgame.world.Room;
 import com.informatikgame.world.RoomType;
+import com.informatikgame.world.RoomUpgrade;
+import com.informatikgame.world.UpgradeType;
 import com.informatikgame.world.World;
 
 /**
@@ -37,6 +41,10 @@ import com.informatikgame.world.World;
  * Game Over 4. Raum-Übergang → Wiederholen bis Sieg
  */
 public class GameManager implements FightManager.CombatEventListener {
+
+    public void setPlayer(Player player) {
+        this.player = player;
+    }
 
     /**
      * Event-Listener Interface für UI-Updates
@@ -110,7 +118,6 @@ public class GameManager implements FightManager.CombatEventListener {
     private final Queue<String> inputQueue;
     private boolean waitingForInput;
     private boolean gameRunning;
-    private int maxPlayerHealth = 100;  // Für HP anzeige
 
     private final String[] roomNames = {
         "Eingangsbereich",
@@ -133,7 +140,7 @@ public class GameManager implements FightManager.CombatEventListener {
     public GameManager() {
         this.inputQueue = new LinkedList<>();
         this.waitingForInput = false;
-        initializeGame();
+        // initializeGame();
     }
 
     public void setEventListener(GameEventListener listener) {
@@ -143,11 +150,11 @@ public class GameManager implements FightManager.CombatEventListener {
     /**
      * Initialisiert das Spiel mit Standardwerten
      */
-    private void initializeGame() {
-        // Spieler mit PlayerType erstellen (hier testweise SWORD_FIGHTER)
+    public void initializeGameWithPlayer(PlayerType playerType) {
+        // Spieler mit PlayerType erstellen
         // lifeTotal, armourValue, initiative, attack, defense, damage
-        this.player = new Player(PlayerType.SWORD_FIGHTER);
-        this.maxPlayerHealth = player.getLifeTotal();  // Maximum hp speichern
+        this.player = new Player(playerType);
+
         this.fightManager = new FightManager(player);
         this.fightManager.setCombatEventListener(this);  // Set GameManager as combat listener
 
@@ -155,11 +162,12 @@ public class GameManager implements FightManager.CombatEventListener {
         RoomType[] gameRooms = {
             RoomType.INTRO_ROOM,
             RoomType.FLOOR_ROOM,
+            RoomType.PANTRY_1,
             RoomType.LIBRARY_ROOM,
-            RoomType.PANTRY,
             RoomType.DINING_HALL,
             RoomType.LABORATORY,
             RoomType.CORRIDOR,
+            RoomType.PANTRY_2,
             RoomType.FINAL_ROOM
         };
 
@@ -177,7 +185,7 @@ public class GameManager implements FightManager.CombatEventListener {
             eventListener.onStoryDisplay(roomStory);
             // onRoomChange() will be called after story is read in continueAfterStory()
 
-            eventListener.onPlayerHealthChange(player.getLifeTotal(), maxPlayerHealth);
+            eventListener.onPlayerHealthChange(player.getLifeTotal(), player.getMaxLife());
         }
 
         // processCurrentRoom() will be called after story is read
@@ -386,16 +394,37 @@ public class GameManager implements FightManager.CombatEventListener {
         StoryDatabank[] stories = {
             StoryDatabank.INTRO_ROOM,
             StoryDatabank.FLOOR_ROOM,
-            StoryDatabank.LIBRARY_ROOM,
             StoryDatabank.PANTRY_1,
+            StoryDatabank.LIBRARY_ROOM,
             StoryDatabank.DINING_HALL,
             StoryDatabank.LABORATORY,
             StoryDatabank.CORRIDOR,
+            StoryDatabank.PANTRY_2,
             StoryDatabank.FINAL_ROOM
         };
 
         int index = Math.min(world.getCurrent_room_number(), stories.length - 1);
         return StoryDatabank.getStory(stories[index]);
+    }
+
+    /**
+     * Gets the exit story for the current room after combat is finished
+     */
+    public String getExitStory() {
+        StoryDatabank[] exitStories = {
+            StoryDatabank.INTRO_ROOM_END,
+            StoryDatabank.FLOOR_ROOM_END,
+            StoryDatabank.PANTRY_1_END,
+            StoryDatabank.LIBRARY_ROOM_END,
+            StoryDatabank.DINING_HALL_END,
+            StoryDatabank.LABORATORY_END,
+            StoryDatabank.CORRIDOR_END,
+            StoryDatabank.PANTRY_2_END,
+            StoryDatabank.FINAL_ROOM_END
+        };
+
+        int index = Math.min(world.getCurrent_room_number(), exitStories.length - 1);
+        return StoryDatabank.getStory(exitStories[index]);
     }
 
     // === CombatEventListener Implementation ===
@@ -407,6 +436,28 @@ public class GameManager implements FightManager.CombatEventListener {
     @Override
     public void onCombatMessage(String message) {
         notifyLog(message);
+    }
+
+    @Override
+    public void onCombatMessage(String message, FightManager.CombatMessageType messageType) {
+        // Forward colored message to UI if it supports it
+        if (eventListener != null && eventListener instanceof GameplayScreen) {
+            ((GameplayScreen) eventListener).onCombatMessage(message, messageType);
+        } else {
+            // Fallback to regular message
+            notifyLog(message);
+        }
+    }
+
+    @Override
+    public void onQueuedCombatMessage(String message, FightManager.CombatMessageType messageType, long delayMs) {
+        // Forward queued message to UI if it supports it
+        if (eventListener != null && eventListener instanceof GameplayScreen) {
+            ((GameplayScreen) eventListener).onQueuedCombatMessage(message, messageType, delayMs);
+        } else {
+            // Fallback to regular message
+            notifyLog(message);
+        }
     }
 
     @Override
@@ -444,16 +495,47 @@ public class GameManager implements FightManager.CombatEventListener {
             gameOver();
         } else {
             notifyLog("Kampf gewonnen!");
+            // Show exit story after combat victory, before next room transition
+            showExitStoryAndUpgrade();
+        }
+    }
+
+    /**
+     * Shows exit story and applies room upgrade after combat victory
+     */
+    private void showExitStoryAndUpgrade() {
+        if (eventListener != null) {
+            // Get the exit story for the current room
+            String exitStory = getExitStory();
+            if (exitStory != null && !exitStory.trim().isEmpty()) {
+                // Apply the room upgrade before showing the story
+                applyRoomUpgrade();
+
+                // Show the exit story
+                eventListener.onStoryDisplay(exitStory);
+                // After story is read, continueAfterExitStory() will be called
+            } else {
+                // No exit story for this room, go directly to next room check
+                checkForNextRoom();
+            }
+        } else {
             checkForNextRoom();
         }
     }
 
     /**
+     * Method for GUI to call when exit story reading is finished
+     */
+    public void continueAfterExitStory() {
+        checkForNextRoom();
+    }
+
+    /**
      * Method for GUI to call when player makes combat action
      */
-    public void executeCombatAction(int targetEnemyIndex, int finteLevel, int wuchtschlagLevel) {
+    public void executeCombatAction(int targetEnemyIndex, AttackType attackType) {
         if (fightManager != null && fightManager.isWaitingForPlayerAction()) {
-            fightManager.executePlayerAction(targetEnemyIndex, finteLevel, wuchtschlagLevel);
+            fightManager.executePlayerAction(targetEnemyIndex, attackType);
         }
     }
 
@@ -467,5 +549,41 @@ public class GameManager implements FightManager.CombatEventListener {
             eventListener.onRoomChange(roomNum, world.getRoom_count(), roomName);
         }
         processCurrentRoom();
+    }
+
+    /**
+     * Applies room-specific upgrade based on the current room Should be called
+     * when showing exit stories after clearing a room
+     */
+    public void applyRoomUpgrade() {
+        int currentRoomIndex = world.getCurrent_room_number();
+
+        // Get the RoomType from the world's room list
+        RoomType[] gameRooms = {
+            RoomType.INTRO_ROOM,
+            RoomType.FLOOR_ROOM,
+            RoomType.PANTRY_1,
+            RoomType.LIBRARY_ROOM,
+            RoomType.DINING_HALL,
+            RoomType.LABORATORY,
+            RoomType.CORRIDOR,
+            RoomType.PANTRY_2,
+            RoomType.FINAL_ROOM
+        };
+
+        if (currentRoomIndex >= 0 && currentRoomIndex < gameRooms.length) {
+            RoomType currentRoomType = gameRooms[currentRoomIndex];
+            RoomUpgrade roomUpgrade = RoomUpgrade.getUpgradeForRoom(currentRoomType);
+
+            if (roomUpgrade != null && roomUpgrade.getUpgradeType() != null) {
+                UpgradeType upgradeType = roomUpgrade.getUpgradeType();
+                player.upgrade(upgradeType);
+                if (eventListener != null) {
+                    eventListener.onPlayerHealthChange(player.getLifeTotal(), player.getMaxLife());
+                }
+
+                notifyLog("Upgrade angewendet: " + upgradeType.name());
+            }
+        }
     }
 }

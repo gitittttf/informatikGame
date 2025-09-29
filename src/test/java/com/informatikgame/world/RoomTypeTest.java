@@ -15,7 +15,8 @@ public class RoomTypeTest {
         assertNotNull(RoomType.DINING_HALL);
         assertNotNull(RoomType.LABORATORY);
         assertNotNull(RoomType.CORRIDOR);
-        assertNotNull(RoomType.PANTRY);
+        assertNotNull(RoomType.PANTRY_1);
+        assertNotNull(RoomType.PANTRY_2);
         assertNotNull(RoomType.FINAL_ROOM);
     }
 

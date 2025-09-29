@@ -15,5 +15,6 @@ Erweiterungen (Ctrl+Shift+X) in VSCode:
 - **Maven for Java** (von Microsoft)
 
 ## Spiel starten
-1. `Main.java` in `src/main/java/` öffnen
-2. F5 drücken oder "Run and Debug"
+### Zwei optionen
+1. Die .exe im /target/ Ordner starten
+2. `mvn exec:java` im Terminal eingeben

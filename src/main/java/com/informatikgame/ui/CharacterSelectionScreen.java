@@ -5,9 +5,16 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
+import com.informatikgame.core.GameManager;
+import com.informatikgame.world.PlayerType;
 
 public class CharacterSelectionScreen extends GameScreen {
 
+    private GameManager gameManager;
+
+    public void setGameManager(GameManager gameManager) {
+        this.gameManager = gameManager;
+    }
     private int selectedOption = 0;
     private final String[] characterSelectionOptions = {
         "► Schwertkrieger",
@@ -32,7 +39,8 @@ public class CharacterSelectionScreen extends GameScreen {
         int x, y;
         char symbol;
         TextColor color;
-        int speed;
+        int speedY;
+        int speedX;
 
         @SuppressWarnings("OverridableMethodCallInConstructor")
         Particle() {
@@ -43,23 +51,25 @@ public class CharacterSelectionScreen extends GameScreen {
             TerminalSize size = screenManager.getSize();
             // Startpositionen
             x = (int) (Math.random() * size.getColumns());
-            y = 0;
+            y = (int) (Math.random() * size.getRows());
             // Geschwindigkeit
-            speed = 1 + (int) (Math.random() * 5);
+            speedY = 1 + (int) (Math.random() * 0.2);
+            speedX = 1 + (int) (Math.random() * 0.2);
 
             // Symbole
-            char[] symbols = {'+', '"', '█', '*', '·', '•'};
+            char[] symbols = {'*', '·', '•'};
             symbol = symbols[(int) (Math.random() * symbols.length)];
 
             // Farbe
-            int green = 50 + (int) (Math.random() * 150);
-            color = new TextColor.RGB(0, green, 0);
+            int white = 50 + (int) (Math.random() * 150);
+            color = new TextColor.RGB(white, white, white);
         }
 
         void update() {
-            y += speed;
+            y += speedY;
+            x += speedX;
             TerminalSize size = screenManager.getSize();
-            if (y >= size.getRows()) {
+            if (y >= size.getRows() || x >= size.getColumns()) {
                 reset();
             }
         }
@@ -68,7 +78,7 @@ public class CharacterSelectionScreen extends GameScreen {
     @Override
     public void initialize() {
         // Initialisiere Partikelsystem
-        particles = new Particle[30];
+        particles = new Particle[50];
         for (int i = 0; i < particles.length; i++) {
             particles[i] = new Particle();
             // Verteile über den Bildschirm
@@ -90,20 +100,18 @@ public class CharacterSelectionScreen extends GameScreen {
         int titleY = 5;
         for (int i = 0; i < titleArt.length; i++) {
             // Zufälliger Glitch-Effekt
-            // if (animationFrame % 30 == 0 && Math.random() < 0.1) {
-            //     // Glitch: verschiebe Zeile leicht
-            //     int offset = (int) (Math.random() * 3) - 1;
-            //     graphics.setForegroundColor(new TextColor.RGB(153, 153, 0)); // TODO richtige farbe finden
-            //     drawCentered(graphics, titleArt[i], titleY + i + offset);
-            // } else {
-            //     // Normal: grüne Farbe mit Pulsieren
-            //     // int brightness2 = 150 + (int) (Math.cos(animationFrame * 0.2 + i) * 70);
-            //     int brightness = 150 + (int) (Math.sin(animationFrame * 0.2 + i) * 70);
-            //     graphics.setForegroundColor(new TextColor.RGB(0, brightness, 0));
-            //     drawCentered(graphics, titleArt[i], titleY + i);
-            // }
-            int brightness = 150 + (int) (Math.sin(animationFrame * 0.2 + i) * 70);
-            graphics.setForegroundColor(new TextColor.RGB(brightness, brightness, brightness));
+            if (animationFrame % 30 == 0 && Math.random() < 0.1) {
+                // Glitch: verschiebe Zeile leicht
+                int offset = (int) (Math.random() * 3) - 1;
+                graphics.setForegroundColor(new TextColor.RGB(153, 153, 0));
+                drawCentered(graphics, titleArt[i], titleY + i + offset);
+            } else {
+                // Normal: grüne Farbe mit Pulsieren
+                // int brightness2 = 150 + (int) (Math.cos(animationFrame * 0.2 + i) * 70);
+                int brightness = 150 + (int) (Math.sin(animationFrame * 0.2 + i) * 70);
+                graphics.setForegroundColor(new TextColor.RGB(0, brightness, 0));
+                drawCentered(graphics, titleArt[i], titleY + i);
+            }
             drawCentered(graphics, titleArt[i], titleY + i);
         }
 
@@ -153,7 +161,7 @@ public class CharacterSelectionScreen extends GameScreen {
         graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
         graphics.setForegroundColor(TextColor.ANSI.YELLOW);
         String controls = "↑↓ Navigation | ENTER Auswählen | ESC Zurück";
-        drawCentered(graphics, controls, size.getRows() - 1);
+        drawCentered(graphics, controls, size.getRows() - 2);
     }
 
     @Override
@@ -172,19 +180,20 @@ public class CharacterSelectionScreen extends GameScreen {
         }
     }
 
-    // TODO: FALSCHE OPTIONEN, character selection implementieren
     private void executeOption() {
-        switch (selectedOption) {
-            case 0 -> // Neues Spiel
-                screenManager.switchToScreen("game");
-            case 1 -> { // Sword
-            }
-            case 2 -> // Einstellungen
-                screenManager.switchToScreen("settings");
-            case 5 -> // Beenden
-                screenManager.stopRunning();
-        }
-        // 
+        PlayerType selectedType;
+        selectedType = switch (selectedOption) {
+            case 0 ->
+                PlayerType.SWORD_FIGHTER;
+            case 1 ->
+                PlayerType.SHIELD_FIGHTER;
+            default ->
+                PlayerType.SWORD_FIGHTER;
+        };
+
+        // Initialize game with selected player type
+        gameManager.initializeGameWithPlayer(selectedType);
+        screenManager.switchToScreen("game");
     }
 
     @Override
@@ -199,6 +208,7 @@ public class CharacterSelectionScreen extends GameScreen {
 
     @Override
     public boolean onEscape() {
-        return selectedOption == 5; // Nur wenn "Beenden" ausgewählt
+        screenManager.switchToScreen("menu");
+        return false;
     }
 }

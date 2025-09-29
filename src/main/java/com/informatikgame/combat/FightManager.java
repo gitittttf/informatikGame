@@ -2,6 +2,8 @@ package com.informatikgame.combat;
 
 import java.util.ArrayList;
 import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.LinkedList;
 
 import com.informatikgame.entities.Character;
 import com.informatikgame.entities.Enemy;
@@ -52,6 +54,16 @@ public class FightManager {
         void onCombatMessage(String message);
 
         /**
+         * Kampflog Nachricht mit Farbe für ui anzeige
+         */
+        void onCombatMessage(String message, CombatMessageType messageType);
+
+        /**
+         * Queued combat message with delay
+         */
+        void onQueuedCombatMessage(String message, CombatMessageType messageType, long delayMs);
+
+        /**
          * Spieler ist am Zug -> ui soll input modus aktivieren
          */
         void onPlayerTurn();
@@ -78,6 +90,30 @@ public class FightManager {
         void onCombatEnd(boolean playerWon);
     }
 
+    /**
+     * Types of combat messages for color coding
+     */
+    public enum CombatMessageType {
+        ROUND_START, // For round indicators
+        PLAYER_ACTION, // For player actions
+        ENEMY_ACTION, // For enemy actions
+        UPGRADE, // For upgrades
+        SPECIAL_MOVE, // For finte/wuchtschlag
+        DAMAGE, // For damage dealing
+        DEFENSE, // For defense/parrying
+        COMBAT_START, // For combat start
+        COMBAT_END      // For combat end
+    }
+
+    /**
+     * Types of attacks
+     */
+    public enum AttackType {
+        NORMAL,
+        FINTE,
+        WUCHTSCHLAG
+    }
+
     private Player player;
     private ArrayList<Enemy> enemiesLeftToRight;
     private CombatEventListener eventListener;
@@ -92,6 +128,49 @@ public class FightManager {
         this.waitingForPlayerAction = false;
         this.currentRound = 0;
         this.playerMaxHP = player.getLifeTotal(); // Store initial HP as max
+
+        // Set up combat event listeners for characters
+        setupCombatEventListeners();
+    }
+
+    private void setupCombatEventListeners() {
+        Character.CombatEventListener characterListener = new Character.CombatEventListener() {
+            @Override
+            public void onCombatMessage(String message, Character.CombatMessageType type, long delayMs) {
+                if (eventListener != null) {
+                    // Convert Character.CombatMessageType to FightManager.CombatMessageType
+                    CombatMessageType fightManagerType = convertMessageType(type);
+                    eventListener.onQueuedCombatMessage(message, fightManagerType, delayMs);
+                }
+            }
+        };
+
+        player.setCombatEventListener(characterListener);
+    }
+
+    private CombatMessageType convertMessageType(Character.CombatMessageType charType) {
+        switch (charType) {
+            case ROUND_START:
+                return CombatMessageType.ROUND_START;
+            case PLAYER_ACTION:
+                return CombatMessageType.PLAYER_ACTION;
+            case ENEMY_ACTION:
+                return CombatMessageType.ENEMY_ACTION;
+            case UPGRADE:
+                return CombatMessageType.UPGRADE;
+            case SPECIAL_MOVE:
+                return CombatMessageType.SPECIAL_MOVE;
+            case DAMAGE:
+                return CombatMessageType.DAMAGE;
+            case DEFENSE:
+                return CombatMessageType.DEFENSE;
+            case COMBAT_START:
+                return CombatMessageType.COMBAT_START;
+            case COMBAT_END:
+                return CombatMessageType.COMBAT_END;
+            default:
+                return CombatMessageType.PLAYER_ACTION;
+        }
     }
 
     public void setCombatEventListener(CombatEventListener listener) {
@@ -117,9 +196,25 @@ public class FightManager {
         this.currentRound = 1;
         this.waitingForPlayerAction = false;
 
+        // Setup combat listeners for all enemies
+        Character.CombatEventListener enemyListener = new Character.CombatEventListener() {
+            @Override
+            public void onCombatMessage(String message, Character.CombatMessageType type, long delayMs) {
+                if (eventListener != null) {
+                    // Convert Character.CombatMessageType to FightManager.CombatMessageType
+                    CombatMessageType fightManagerType = convertMessageType(type);
+                    eventListener.onQueuedCombatMessage(message, fightManagerType, delayMs);
+                }
+            }
+        };
+
+        for (Enemy enemy : enemiesLeftToRight) {
+            enemy.setCombatEventListener(enemyListener);
+        }
+
         // Ui über kampf start benachrichtigen
         if (eventListener != null) {
-            eventListener.onCombatMessage("Der Kampf beginnt!");
+            eventListener.onCombatMessage("=== Der Kampf beginnt! ===", CombatMessageType.COMBAT_START);
             eventListener.onEnemyHealthUpdate(enemiesLeftToRight.toArray(new Enemy[0]));
         }
 
@@ -135,6 +230,7 @@ public class FightManager {
 
         if (eventListener != null) {
             eventListener.onRoundStart(currentRound);
+            eventListener.onCombatMessage("=== RUNDE " + currentRound + " ===", CombatMessageType.ROUND_START);
             eventListener.onPlayerHealthUpdate(player.getLifeTotal(), playerMaxHP);
         }
 
@@ -189,7 +285,7 @@ public class FightManager {
             int randomNumberWuchtschlag = (int) (Math.random() * (enemy.getWuchtschlagLevel() + 1));
 
             if (eventListener != null) {
-                eventListener.onCombatMessage(enemy.getType() + " greift an!");
+                eventListener.onQueuedCombatMessage(enemy.getType() + " ist am Zug!", CombatMessageType.ENEMY_ACTION, 0);
             }
 
             enemy.attack(this.player, randomNumberFinte, randomNumberWuchtschlag);
@@ -198,7 +294,7 @@ public class FightManager {
                 eventListener.onPlayerHealthUpdate(player.getLifeTotal(), playerMaxHP);
             }
 
-            // Continue with next action after a brief pause
+            // Continue with next action 
             processNextAction();
         }
     }
@@ -234,14 +330,7 @@ public class FightManager {
         Enemy target = enemiesLeftToRight.get(targetEnemyIndex);
 
         if (eventListener != null) {
-            String action = "Angriff auf " + target.getType();
-            if (finteLevel > 0) {
-                action += " (Finte Lv." + finteLevel + ")";
-            }
-            if (wuchtschlagLevel > 0) {
-                action += " (Wuchtschlag Lv." + wuchtschlagLevel + ")";
-            }
-            eventListener.onCombatMessage(action);
+            eventListener.onQueuedCombatMessage("Du startest deinen Angriff!", CombatMessageType.PLAYER_ACTION, 0);
         }
 
         player.attack(target, finteLevel, wuchtschlagLevel);
@@ -252,6 +341,21 @@ public class FightManager {
 
         waitingForPlayerAction = false;
         processNextAction();
+    }
+
+    public void executePlayerAction(int targetEnemyIndex, AttackType attackType) {
+        int finteLevel = 0;
+        int wuchtschlagLevel = 0;
+
+        switch (attackType) {
+            case FINTE ->
+                finteLevel = player.getFinteLevel(); // Uses PlayerType's value (3)
+            case WUCHTSCHLAG ->
+                wuchtschlagLevel = player.getWuchtschlagLevel(); // Uses PlayerType's value (3)
+            case NORMAL -> {
+            }
+        }
+        executePlayerAction(targetEnemyIndex, finteLevel, wuchtschlagLevel);
     }
 
     private void endFight() {
