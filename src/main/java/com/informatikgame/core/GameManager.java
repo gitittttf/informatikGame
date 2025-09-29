@@ -4,7 +4,6 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import com.informatikgame.combat.FightManager;
-import com.informatikgame.combat.FightManager.AttackType;
 import com.informatikgame.entities.Enemy;
 import com.informatikgame.entities.Player;
 import com.informatikgame.ui.GameplayScreen;
@@ -531,9 +530,9 @@ public class GameManager implements FightManager.CombatEventListener {
     /**
      * Method for GUI to call when player makes combat action
      */
-    public void executeCombatAction(int targetEnemyIndex, AttackType attackType) {
+    public void executeCombatAction(int targetEnemyIndex, int finteLevel, int wuchtschlagLevel) {
         if (fightManager != null && fightManager.isWaitingForPlayerAction()) {
-            fightManager.executePlayerAction(targetEnemyIndex, attackType);
+            fightManager.executePlayerAction(targetEnemyIndex, finteLevel, wuchtschlagLevel);
         }
     }
 

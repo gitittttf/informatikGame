@@ -35,6 +35,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     private List<String> storyLines = new ArrayList<>();
     private int visibleStoryLines = 0;
     private boolean waitingForStoryInput = false;
+    private boolean isExitStory = false;
     private boolean inCombat = false;
     @SuppressWarnings("FieldMayBeFinal")
     private int selectedAction = 0;
@@ -57,12 +58,49 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         EXPLORATION, // Raum erkunden
         COMBAT, // Im Kampf
         ROOM_TRANSITION, // Zwischen Räumen
+        MAP, // Karte anzeigen
         GAME_OVER, // Spiel vorbei
         VICTORY        // Gewonnen
     }
     private UIState currentState = UIState.EXPLORATION;
+    private UIState previousState = UIState.EXPLORATION; // Store state before showing map
+
+    // Placeholder map string (replace with your actual map content)
+    private final String mapContent
+            = """
+              +-------------------------------------------------[KARTE]----------------------------------------------------+
+              |                                                                                                            |
+              |    +--------------+                          +------------------------------+                              |
+              |   /                \\     +--------------+    |                              |                              |
+              |  +                  +----+              +----+                              |                              |
+              |  |    [Eingang]     #    #    [Flur]    #    #        [Bibliothek]          +--------------------+         |
+              |  +                  +----+              +----+                              #                    |         |
+              |   \\                /     +--------------+    +------------------------------+--------------+     |         |
+              |    +--------------+                                                                        |     |         |
+              |                                           +--------------------------------------+         |     |         |
+              |           +---+                           |                                      |   +-----+--#--+--+      |
+              |       +--+     +--+      +----------------+                                      +---+              |      |
+              |     -+             +-   /                 #                                      #   #[Speisekammer]|      |
+              |    |                 +-+   +--------------+            [Speisesaal]              +---+              |      |
+              |    |     [Labor]     #    /               |                                      |   +--------------+      |
+              |    |                 +---+                |                                      |                         |
+              |     -+             +-                     |                                      |                         |
+              |       +--+     +--+                       +--------------------------------------+                         |
+              |           +-#-+                                                                                            |
+              |           |   |                                                                                            |
+              |           |   |                                            +------------------------------------+          |
+              |       +---+   +---------------------------------+      +--+                                      +--+      |
+              |       |                                         |    -+                                              +-    |
+              |       |                                         +---+                                                  |   |
+              |       |              [Korridor]                 #   #                   [Boss Raum]                    |   |
+              |       |                                         +---+                                                  |   |
+              |       |                                         |    -+                                              +-    |
+              |       +-----------------------------------------+      +--+                                      +--+      |
+              |                                                            +------------------------------------+          |
+              +------------------------------------------------------------------------------------------------------------+""";
 
     @Override
+
     public void initialize() {
         combatLog = new ArrayList<>();
         combatLog.add("=== Willkommen im Dungeon ===");
@@ -212,8 +250,8 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     @Override
     public void onStoryDisplay(String storyText) {
         currentStoryText = storyText;
+        isExitStory = (currentState == UIState.ROOM_TRANSITION);
         currentState = UIState.STORY_DISPLAY;
-
         // Prepare story for animated display
         prepareStoryDisplay(storyText);
     }
@@ -264,6 +302,8 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         switch (currentState) {
             case STORY_DISPLAY ->
                 drawStoryDisplay(graphics);
+            case MAP ->
+                drawMap(graphics);
             case GAME_OVER ->
                 drawGameOverScreen(graphics);
             case VICTORY ->
@@ -580,9 +620,17 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             case STORY_DISPLAY -> {
                 if (keyStroke.getKeyType() == KeyType.Enter) {
                     if (waitingForStoryInput) {
-                        // Story finished, continue to room exploration
-                        currentState = UIState.EXPLORATION;
-                        gameManager.continueAfterStory();
+                        // checken ob exit story
+                        if (isExitStory) {
+                            // Exit story finished
+                            currentState = UIState.ROOM_TRANSITION;
+                            gameManager.continueAfterExitStory();
+                            isExitStory = false; // Reset flag
+                        } else {
+                            // Room story finished
+                            currentState = UIState.EXPLORATION;
+                            gameManager.continueAfterStory();
+                        }
                     } else if (visibleStoryLines >= storyLines.size()) {
                         // All lines visible, now wait for input
                         waitingForStoryInput = true;
@@ -605,12 +653,31 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                 }
             }
 
-            case COMBAT ->
-                handleCombatInput(keyStroke);
+            case COMBAT -> {
+                // Check for map key first
+                if (keyStroke.getKeyType() == KeyType.Character
+                        && (keyStroke.getCharacter() == 'm' || keyStroke.getCharacter() == 'M')) {
+                    showMap();
+                } else {
+                    handleCombatInput(keyStroke);
+                }
+            }
+
+            case MAP -> {
+                // Exit map on ESC or any key
+                if (keyStroke.getKeyType() == KeyType.Escape
+                        || keyStroke.getKeyType() == KeyType.Enter
+                        || keyStroke.getKeyType() == KeyType.Character) {
+                    hideMap();
+                }
+            }
 
             case EXPLORATION -> {
-                // Warte auf nächsten Raum
-                if (keyStroke.getKeyType() == KeyType.Enter) {
+                // Check for map key first
+                if (keyStroke.getKeyType() == KeyType.Character
+                        && (keyStroke.getCharacter() == 'm' || keyStroke.getCharacter() == 'M')) {
+                    showMap();
+                } else if (keyStroke.getKeyType() == KeyType.Enter) {
                     gameManager.advanceToNextRoom();
                 }
             }
@@ -620,12 +687,13 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     // Combat input state
     private enum CombatInputState {
         SELECTING_ENEMY,
-        SELECTING_ATTACK_TYPE;
+        SELECTING_FINTE,
+        SELECTING_WUCHTSCHLAG
     }
-
     private CombatInputState combatInputState = CombatInputState.SELECTING_ENEMY;
     private int selectedEnemyIndex = 0;
-    private FightManager.AttackType selectedAttackType = FightManager.AttackType.NORMAL;
+    private int selectedFinteLevel = 0;
+    private int selectedWuchtschlagLevel = 0;
 
     private void handleCombatInput(KeyStroke keyStroke) {
         if (currentEnemies.length == 0) {
@@ -649,55 +717,58 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                         // Invalid input, ignore
                     }
                 } else if (keyStroke.getKeyType() == KeyType.Enter) {
-                    combatInputState = CombatInputState.SELECTING_ATTACK_TYPE;
-                    selectedAttackType = FightManager.AttackType.NORMAL;
+                    combatInputState = CombatInputState.SELECTING_FINTE;
+                    selectedFinteLevel = 0;
                 }
             }
-            case SELECTING_ATTACK_TYPE -> {
-                if (null != keyStroke.getKeyType()) {
-                    switch (keyStroke.getKeyType()) {
-                        case ArrowLeft -> // Cycle backwards through attack types
-                            selectedAttackType = switch (selectedAttackType) {
-                                case NORMAL ->
-                                    FightManager.AttackType.WUCHTSCHLAG;
-                                case FINTE ->
-                                    FightManager.AttackType.NORMAL;
-                                case WUCHTSCHLAG ->
-                                    FightManager.AttackType.FINTE;
-                            };
-                        case ArrowRight -> // Cycle forwards through attack types
-                            selectedAttackType = switch (selectedAttackType) {
-                                case NORMAL ->
-                                    FightManager.AttackType.FINTE;
-                                case FINTE ->
-                                    FightManager.AttackType.WUCHTSCHLAG;
-                                case WUCHTSCHLAG ->
-                                    FightManager.AttackType.NORMAL;
-                            };
-                        case Character -> {
-                            // Allow number key selection: 1=Normal, 2=Finte, 3=Wuchtschlag
-                            char ch = keyStroke.getCharacter();
-                            switch (ch) {
-                                case '1' ->
-                                    selectedAttackType = FightManager.AttackType.NORMAL;
-                                case '2' ->
-                                    selectedAttackType = FightManager.AttackType.FINTE;
-                                case '3' ->
-                                    selectedAttackType = FightManager.AttackType.WUCHTSCHLAG;
-                            }
+            case SELECTING_FINTE -> {
+                int maxFinte = gameManager.getPlayer().getFinteLevel();
+                if (keyStroke.getKeyType() == KeyType.ArrowLeft && selectedFinteLevel > 0) {
+                    selectedFinteLevel--;
+                } else if (keyStroke.getKeyType() == KeyType.ArrowRight && selectedFinteLevel < maxFinte) {
+                    selectedFinteLevel++;
+                } else if (keyStroke.getKeyType() == KeyType.Character) {
+                    // Allow number key selection
+                    try {
+                        int level = Character.getNumericValue(keyStroke.getCharacter());
+                        if (level >= 0 && level <= maxFinte) {
+                            selectedFinteLevel = level;
                         }
-                        case Enter -> {
-                            // Execute the combat action
-                            gameManager.executeCombatAction(selectedEnemyIndex, selectedAttackType);
-                            combatInputState = CombatInputState.SELECTING_ENEMY;
-                            selectedEnemyIndex = 0;
-                            selectedAttackType = FightManager.AttackType.NORMAL;
-                        }
-                        case Escape ->
-                            combatInputState = CombatInputState.SELECTING_ENEMY;
-                        default -> {
-                        }
+                    } catch (Exception e) {
+                        // Invalid input, ignore
                     }
+                } else if (keyStroke.getKeyType() == KeyType.Enter) {
+                    combatInputState = CombatInputState.SELECTING_WUCHTSCHLAG;
+                    selectedWuchtschlagLevel = 0;
+                } else if (keyStroke.getKeyType() == KeyType.Escape) {
+                    combatInputState = CombatInputState.SELECTING_ENEMY;
+                }
+            }
+            case SELECTING_WUCHTSCHLAG -> {
+                int maxWuchtschlag = gameManager.getPlayer().getWuchtschlagLevel();
+                if (keyStroke.getKeyType() == KeyType.ArrowLeft && selectedWuchtschlagLevel > 0) {
+                    selectedWuchtschlagLevel--;
+                } else if (keyStroke.getKeyType() == KeyType.ArrowRight && selectedWuchtschlagLevel < maxWuchtschlag) {
+                    selectedWuchtschlagLevel++;
+                } else if (keyStroke.getKeyType() == KeyType.Character) {
+                    // Allow number key selection
+                    try {
+                        int level = Character.getNumericValue(keyStroke.getCharacter());
+                        if (level >= 0 && level <= maxWuchtschlag) {
+                            selectedWuchtschlagLevel = level;
+                        }
+                    } catch (Exception e) {
+                        // Invalid input, ignore
+                    }
+                } else if (keyStroke.getKeyType() == KeyType.Enter) {
+                    // Execute the combat action
+                    gameManager.executeCombatAction(selectedEnemyIndex, selectedFinteLevel, selectedWuchtschlagLevel);
+                    combatInputState = CombatInputState.SELECTING_ENEMY;
+                    selectedEnemyIndex = 0;
+                    selectedFinteLevel = 0;
+                    selectedWuchtschlagLevel = 0;
+                } else if (keyStroke.getKeyType() == KeyType.Escape) {
+                    combatInputState = CombatInputState.SELECTING_FINTE;
                 }
             }
         }
@@ -736,24 +807,25 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                     graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 1-" + currentEnemies.length);
                     graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Weiter");
                 }
-                case SELECTING_ATTACK_TYPE -> {
-                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Wähle Angriff:");
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 1-3");
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "1=Normal 2=Finte 3=Wuchtschlag");
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 3), "ENTER: Angriff! ESC: Zurück");
-
-                    // Show current selection
-                    String attackName = switch (selectedAttackType) {
-                        case NORMAL ->
-                            "Normal";
-                        case FINTE ->
-                            "Finte";
-                        case WUCHTSCHLAG ->
-                            "Wuchtschlag";
-                    };
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 4), "Gewählt: " + attackName);
+                case SELECTING_FINTE -> {
+                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Finte Level:");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 0-" + gameManager.getPlayer().getFinteLevel());
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Weiter");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 3), "ESC: Zurück");
+                }
+                case SELECTING_WUCHTSCHLAG -> {
+                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Wuchtschlag Level:");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 0-" + gameManager.getPlayer().getWuchtschlagLevel());
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Angriff!");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 3), "ESC: Zurück");
                 }
             }
+
+            // Show current selection
+            graphics.setForegroundColor(TextColor.ANSI.CYAN);
+            graphics.putString(new TerminalPosition(x + 2, instructionY + 5),
+                    String.format("Ziel: %d, Finte: %d, Wuchtschlag: %d",
+                            selectedEnemyIndex + 1, selectedFinteLevel, selectedWuchtschlagLevel));
         }
     }
 
@@ -863,6 +935,39 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                 return new TextColor.RGB(0, 255, 127); // Spring green
             default:
                 return TextColor.ANSI.WHITE;
+        }
+    }
+
+    // Map functionality methods
+    private void showMap() {
+        previousState = currentState;
+        currentState = UIState.MAP;
+    }
+
+    private void hideMap() {
+        currentState = previousState;
+    }
+
+    private void drawMap(TextGraphics graphics) {
+        TerminalSize size = screenManager.getSize();
+
+        // Clear the screen with background color
+        graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
+        graphics.fill(' ');
+
+        // Draw the map content
+        graphics.setForegroundColor(TextColor.ANSI.WHITE);
+        String[] mapLines = mapContent.split("\\n");
+
+        // Center the map on screen
+        int startY = Math.max(0, (size.getRows() - mapLines.length) / 2);
+        int startX = Math.max(0, (size.getColumns() - 78) / 2); // Map is ~78 chars wide
+
+        for (int i = 0; i < mapLines.length && startY + i < size.getRows(); i++) {
+            String line = mapLines[i];
+            if (startX + line.length() <= size.getColumns()) {
+                graphics.putString(new TerminalPosition(startX, startY + i), line);
+            }
         }
     }
 
