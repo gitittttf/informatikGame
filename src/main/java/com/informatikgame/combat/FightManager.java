@@ -228,7 +228,6 @@ public class FightManager {
 
         if (eventListener != null) {
             eventListener.onRoundStart(currentRound);
-            eventListener.onCombatMessage("=== RUNDE " + currentRound + " ===", CombatMessageType.ROUND_START);
             eventListener.onPlayerHealthUpdate(player.getLifeTotal(), player.getMaxLife());
         }
 

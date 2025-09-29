@@ -237,7 +237,7 @@ public class GameManager implements FightManager.CombatEventListener {
         if (world.getCurrent_room_number() < world.getRoom_count() - 1) {
             // Warte auf choice
             waitingForInput = true;
-            notifyLog("Möchtest du zum nächsten Raum gehen? (J/N)");
+            notifyLog("Drücke Enter um in den nächsten Raum zu gehen");
 
             // Notify UI that we're waiting for room transition input
             if (eventListener != null) {

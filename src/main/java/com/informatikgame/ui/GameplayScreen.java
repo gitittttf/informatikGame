@@ -243,7 +243,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
     @Override
     public void onWaitingForRoomTransition() {
-        currentState = UIState.ROOM_TRANSITION;
+        currentState = UIState.EXPLORATION;
     }
 
     @Override
@@ -635,7 +635,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                             gameManager.continueAfterExitStory();
                         } else {
                             // Room story finished
-                            currentState = UIState.EXPLORATION;
+                            currentState = UIState.COMBAT;
                             gameManager.continueAfterStory();
                         }
                     } else if (visibleStoryLines >= storyLines.size()) {
@@ -650,13 +650,8 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                 }
             }
             case ROOM_TRANSITION -> {
-                if (keyStroke.getKeyType() == KeyType.Enter
-                        || (keyStroke.getKeyType() == KeyType.Character
-                        && (keyStroke.getCharacter() == 'j' || keyStroke.getCharacter() == 'J'))) {
-                    gameManager.handlePlayerInput("J");
-                } else if (keyStroke.getKeyType() == KeyType.Character
-                        && (keyStroke.getCharacter() == 'n' || keyStroke.getCharacter() == 'N')) {
-                    gameManager.handlePlayerInput("N");
+                if (keyStroke.getKeyType() == KeyType.Enter) {
+                    gameManager.advanceToNextRoom();
                 }
             }
 
