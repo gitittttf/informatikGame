@@ -121,13 +121,11 @@ public class FightManager {
     private int[] pendingPlayerAction;
     private int currentRound;
     private PriorityQueue<Character> currentActionQueue;
-    private int playerMaxHP;
 
     public FightManager(Player player) {
         this.player = player;
         this.waitingForPlayerAction = false;
         this.currentRound = 0;
-        this.playerMaxHP = player.getLifeTotal(); // Store initial HP as max
 
         // Set up combat event listeners for characters
         setupCombatEventListeners();
@@ -231,7 +229,7 @@ public class FightManager {
         if (eventListener != null) {
             eventListener.onRoundStart(currentRound);
             eventListener.onCombatMessage("=== RUNDE " + currentRound + " ===", CombatMessageType.ROUND_START);
-            eventListener.onPlayerHealthUpdate(player.getLifeTotal(), playerMaxHP);
+            eventListener.onPlayerHealthUpdate(player.getLifeTotal(), player.getMaxLife());
         }
 
         // Create priority queue for this round
@@ -291,7 +289,7 @@ public class FightManager {
             enemy.attack(this.player, randomNumberFinte, randomNumberWuchtschlag);
 
             if (eventListener != null) {
-                eventListener.onPlayerHealthUpdate(player.getLifeTotal(), playerMaxHP);
+                eventListener.onPlayerHealthUpdate(player.getLifeTotal(), player.getMaxLife());
             }
 
             // Continue with next action 
