@@ -187,8 +187,10 @@ public class FightManager {
         for (EnemyType enemy : enemyTypesLeftToRight) {
             this.enemiesLeftToRight.add(new Enemy(enemy));
             Enemy newestEnemy = enemiesLeftToRight.get(enemiesLeftToRight.size() - 1);
-            newestEnemy.setRandomizedInitiative(newestEnemy.getInitiative() + (int) Math.round(Math.random() * 5 + 1));
+            newestEnemy.setRandomizedInitiative(newestEnemy.getInitiative() + (int) Math.round(Math.random() * 6 + 1));
         }
+
+        this.player.setRandomizedInitiative(this.player.getInitiative() + (int) Math.round(Math.random() * 6 + 1));
 
         // Kampf status initialisieren
         this.currentRound = 1;

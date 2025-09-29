@@ -18,7 +18,8 @@ public class CharacterSelectionScreen extends GameScreen {
     private int selectedOption = 0;
     private final String[] characterSelectionOptions = {
         "► Schwertkrieger",
-        "► Schildkrieger"
+        "► Schildkrieger",
+        "► Test"
     };
 
     private final String[] titleArt = {
@@ -187,6 +188,8 @@ public class CharacterSelectionScreen extends GameScreen {
                 PlayerType.SWORD_FIGHTER;
             case 1 ->
                 PlayerType.SHIELD_FIGHTER;
+            case 2 ->
+                PlayerType.TEST_PLAYER;
             default ->
                 PlayerType.SWORD_FIGHTER;
         };
