@@ -59,14 +59,6 @@ public enum StoryDatabank {
     CORRIDOR_END("""
         Nach dem Kampf findest du ein altes Schutzschild, das deine Rüstung verstärkt. (+3 Armour)
     """),
-    // ===================== PANTRY 2 =====================
-    PANTRY_2("""
-        Eine weitere Vorratskammer. Die Luft ist stickig, das Licht flackert nervös. Zwei Mini-Zombies stürmen auf dich zu. 
-        Du musst dich durch den Raum kämpfen!
-    """),
-    PANTRY_2_END("""
-        Du hast die Mini-Zombies besiegt und bist bereit für den nächsten Abschnitt.
-    """),
     // ===================== FINAL ROOM =====================
     FINAL_ROOM("""
         Die letzte Sicherheitstür öffnet sich und enthüllt ein riesiges Labor. Maschinen pfeifen, Flüssigkeiten blubbern in Tanks. 

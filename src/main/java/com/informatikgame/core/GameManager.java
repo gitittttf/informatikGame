@@ -399,7 +399,6 @@ public class GameManager implements FightManager.CombatEventListener {
             StoryDatabank.DINING_HALL,
             StoryDatabank.LABORATORY,
             StoryDatabank.CORRIDOR,
-            StoryDatabank.PANTRY_2,
             StoryDatabank.FINAL_ROOM
         };
 
@@ -419,7 +418,6 @@ public class GameManager implements FightManager.CombatEventListener {
             StoryDatabank.DINING_HALL_END,
             StoryDatabank.LABORATORY_END,
             StoryDatabank.CORRIDOR_END,
-            StoryDatabank.PANTRY_2_END,
             StoryDatabank.FINAL_ROOM_END
         };
 
