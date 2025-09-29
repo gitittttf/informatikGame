@@ -64,7 +64,20 @@
                 <version>3.1.0</version>
                 <configuration>
                     <mainClass>com.informatikgame.core.Main</mainClass>
-                    <commandlineArgs>-Dlanterna.terminal-type=swing</commandlineArgs>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>lanterna.terminal-type</key>
+                            <value>swing</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>sun.java2d.dpiaware</key>
+                            <value>true</value>
+                        </systemProperty>
+                        <systemProperty>
+                            <key>sun.java2d.uiScale</key>
+                            <value>1.0</value>
+                        </systemProperty>
+                    </systemProperties>
                 </configuration>
             </plugin>
 
@@ -90,6 +103,73 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Launch4j Plugin für Windows Executable -->
+            <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>2.5.3</version>
+                <executions>
+                    <execution>
+                        <id>l4j-gui</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <!-- GUI application for better fullscreen support -->
+                            <headerType>gui</headerType>
+                            
+                            <!-- Output executable name -->
+                            <outfile>${project.build.directory}/InformatikGame.exe</outfile>
+                            
+                            <!-- Input JAR file (with dependencies) -->
+                            <jar>${project.build.directory}/${project.build.finalName}-jar-with-dependencies.jar</jar>
+                            
+                            <!-- Error dialog title -->
+                            <errTitle>Informatik Game - Java Error</errTitle>
+                            
+                            <!-- Download URL if Java not found -->
+                            <downloadUrl>https://adoptium.net/</downloadUrl>
+                            
+                            <!-- Main class configuration -->
+                            <classPath>
+                                <mainClass>com.informatikgame.core.Main</mainClass>
+                                <addDependencies>false</addDependencies>
+                            </classPath>
+                            
+                            <!-- JRE requirements -->
+                            <jre>
+                                <minVersion>17.0.0</minVersion>
+                                <maxVersion>21.0.0</maxVersion>
+                                <requires64Bit>false</requires64Bit>
+                                <requiresJdk>false</requiresJdk>
+                                <!-- JVM options for better performance and fullscreen -->
+                                <opts>
+                                    <opt>-Xmx1024m</opt>
+                                    <opt>-Xms512m</opt>
+                                    <opt>-Dlanterna.terminal-type=swing</opt>
+                                    <opt>-Dsun.java2d.dpiaware=true</opt>
+                                    <opt>-Dsun.java2d.uiScale=1.0</opt>
+                                </opts>
+                            </jre>
+                            
+                            <!-- Version information -->
+                            <versionInfo>
+                                <fileVersion>1.0.0.0</fileVersion>
+                                <txtFileVersion>1.0.0</txtFileVersion>
+                                <fileDescription>Informatik Game - Terminal Game</fileDescription>
+                                <copyright>© 2025 Benedikt, Paul M., Simon</copyright>
+                                <productVersion>1.0.0.0</productVersion>
+                                <txtProductVersion>1.0.0</txtProductVersion>
+                                <productName>Informatik Game</productName>
+                                <internalName>informatikgame</internalName>
+                                <originalFilename>InformatikGame.exe</originalFilename>
+                            </versionInfo>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
