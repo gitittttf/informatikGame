@@ -79,7 +79,7 @@ public class Character {
     public void attack(Character target, int finte, int wuchtschlag) {
         finte = clamp(finte, 0, this.finteLevel);
         wuchtschlag = clamp(wuchtschlag, 0, this.wuchtschlagLevel);
-        int diceRoll = (int) (Math.random() * 19) + 1;
+        int diceRoll = (int) (Math.random() * 20) + 1;
 
         long currentDelay = 0;
 
@@ -104,7 +104,7 @@ public class Character {
 
             //numW6 Würfelwürfe für Schaden
             for (int i = 0; i < this.numW6; i++) {
-                damageBonus += (int) Math.round(Math.random() * 5 + 1);
+                damageBonus += (int) Math.round(Math.random() * 6 + 1);
             }
 
             // Success messages for special moves
@@ -137,7 +137,7 @@ public class Character {
 
     //Defense with delay parameter for sequencing
     public void defense(int damageTaken, int defenseDebuff, long startDelay) {
-        int diceRoll = (int) (Math.random() * 20);
+        int diceRoll = (int) (Math.random() * 20 + 1);
 
         long currentDelay = startDelay;
         logMessageWithDelay(this.type + " versucht zu parieren...", CombatMessageType.DEFENSE, currentDelay);
