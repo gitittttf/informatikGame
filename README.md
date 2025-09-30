@@ -16,5 +16,5 @@ Erweiterungen (Ctrl+Shift+X) in VSCode:
 
 ## Spiel starten
 ### Zwei optionen
-1. Die .exe im /target/ Ordner starten
+1. Die .exe im /target/ Ordner starten. Falls nicht vorhanden, vorher mit `mvn clean package -DskipTests` erstellen.
 2. `mvn exec:java` im Terminal eingeben
