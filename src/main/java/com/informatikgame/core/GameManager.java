@@ -166,7 +166,6 @@ public class GameManager implements FightManager.CombatEventListener {
             RoomType.DINING_HALL,
             RoomType.LABORATORY,
             RoomType.CORRIDOR,
-            RoomType.PANTRY_2,
             RoomType.FINAL_ROOM
         };
 
@@ -212,8 +211,6 @@ public class GameManager implements FightManager.CombatEventListener {
             eventListener.onCombatStart();
             eventListener.onEnemyUpdate(createEnemyArray(room.getEnemiesInRoom()));
         }
-
-        notifyLog("Kampf beginnt! " + room.getEnemiesInRoom().length + " Gegner greifen an!");
 
         // Start fight asynchronously - combat will be handled through events
         fightManager.startFight(room.getEnemiesInRoom());
@@ -427,7 +424,11 @@ public class GameManager implements FightManager.CombatEventListener {
     // === CombatEventListener Implementation ===
     @Override
     public void onRoundStart(int roundNumber) {
-        notifyLog("=== Runde " + roundNumber + " ===");
+        if (eventListener != null && eventListener instanceof GameplayScreen) {
+            ((GameplayScreen) eventListener).onCombatMessage("=== Runde " + roundNumber + " ===", FightManager.CombatMessageType.ROUND_START);
+        } else {
+            notifyLog("=== Runde " + roundNumber + " ===");
+        }
     }
 
     @Override
@@ -465,7 +466,7 @@ public class GameManager implements FightManager.CombatEventListener {
 
     @Override
     public void onEnemyTurn(Enemy enemy) {
-        notifyLog(enemy.getType() + " ist dran.");
+        // überflüssig
     }
 
     @Override
@@ -564,7 +565,6 @@ public class GameManager implements FightManager.CombatEventListener {
             RoomType.DINING_HALL,
             RoomType.LABORATORY,
             RoomType.CORRIDOR,
-            RoomType.PANTRY_2,
             RoomType.FINAL_ROOM
         };
 

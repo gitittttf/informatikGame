@@ -86,16 +86,16 @@ public class Character {
         // Announce attack start
         CombatMessageType actionType = this.type.equals("Spieler") ? CombatMessageType.PLAYER_ACTION : CombatMessageType.ENEMY_ACTION;
         logMessageWithDelay(this.type + " startet den Angriff!", actionType, currentDelay);
-        currentDelay += 800;
+        currentDelay += 600;
 
         // Announce special moves
         if (finte > 0) {
             logMessageWithDelay("Versuchte eine Finte (Level " + finte + ") auszuführen...", CombatMessageType.SPECIAL_MOVE, currentDelay);
-            currentDelay += 600;
+            currentDelay += 400;
         }
         if (wuchtschlag > 0) {
             logMessageWithDelay("Versuchte einen Wuchtschlag (Level " + wuchtschlag + ") auszuführen...", CombatMessageType.SPECIAL_MOVE, currentDelay);
-            currentDelay += 600;
+            currentDelay += 400;
         }
 
         if (diceRoll <= this.attack - finte - wuchtschlag * 2) {
@@ -110,21 +110,21 @@ public class Character {
             // Success messages for special moves
             if (finte > 0) {
                 logMessageWithDelay("Die Finte hat geklappt! Der Gegner " + target.type + " ist verwirrt!", CombatMessageType.SPECIAL_MOVE, currentDelay);
-                currentDelay += 700;
+                currentDelay += 500;
             }
             if (wuchtschlag > 0) {
                 logMessageWithDelay("Der Wuchtschlag hat geklappt! Zusätzlicher Schaden wird verursacht!", CombatMessageType.SPECIAL_MOVE, currentDelay);
-                currentDelay += 700;
+                currentDelay += 500;
             }
 
             logMessageWithDelay("Greife " + target.type + " an mit " + (this.damage + damageBonus) + " Schaden!", CombatMessageType.DAMAGE, currentDelay);
-            currentDelay += 500;
+            currentDelay += 300;
             target.defense(this.damage + damageBonus, defenseDebuff, currentDelay);
         } else {
             // Failed attack messages
             if (finte > 0 || wuchtschlag > 0) {
                 logMessageWithDelay("Der Spezialangriff ist fehlgeschlagen!", CombatMessageType.SPECIAL_MOVE, currentDelay);
-                currentDelay += 600;
+                currentDelay += 200;
             }
             logMessageWithDelay(this.type + " scheiterte " + target.type + " anzugreifen.", actionType, currentDelay);
         }
@@ -141,7 +141,7 @@ public class Character {
 
         long currentDelay = startDelay;
         logMessageWithDelay(this.type + " versucht zu parieren...", CombatMessageType.DEFENSE, currentDelay);
-        currentDelay += 600;
+        currentDelay += 200;
 
         if (diceRoll <= this.defense - defenseDebuff) {
             logMessageWithDelay(this.type + " parriert erfolgreich!", CombatMessageType.DEFENSE, currentDelay);
@@ -152,7 +152,7 @@ public class Character {
         this.lifeTotal -= actualDamage;
 
         logMessageWithDelay(this.type + " konnte nicht parieren!", CombatMessageType.DEFENSE, currentDelay);
-        currentDelay += 400;
+        currentDelay += 200;
         logMessageWithDelay(this.type + " nimmt " + actualDamage + " Schaden.", CombatMessageType.DAMAGE, currentDelay);
     }
 

@@ -34,10 +34,6 @@ public enum RoomType {
         EnemyType.MINI_ZOMBIE,
         EnemyType.MINI_ZOMBIE
     }),
-    PANTRY_2(new EnemyType[]{
-        EnemyType.MINI_ZOMBIE,
-        EnemyType.MINI_ZOMBIE
-    }),
     FINAL_ROOM(new EnemyType[]{EnemyType.ENDBOSS});
 
     public EnemyType[] enemiesInRoom;

@@ -37,7 +37,7 @@ public class World {
     public void advance_to_next_room() {
         if (current_room_number < room_count - 1) {
             this.current_room_number++;
-            this.current_room = roomList.get(current_room_number);
+            this.current_room = roomList.get(this.current_room_number);
         } else {
             System.out.println("Kein weiterer Raum vorhanden!");
         }

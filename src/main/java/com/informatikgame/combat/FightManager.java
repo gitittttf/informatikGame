@@ -319,10 +319,6 @@ public class FightManager {
         // Execute player attack
         Enemy target = enemiesLeftToRight.get(targetEnemyIndex);
 
-        if (eventListener != null) {
-            eventListener.onQueuedCombatMessage("Du startest deinen Angriff!", CombatMessageType.PLAYER_ACTION, 0);
-        }
-
         player.attack(target, finteLevel, wuchtschlagLevel);
 
         if (eventListener != null) {

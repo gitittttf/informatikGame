@@ -12,7 +12,6 @@ public enum RoomUpgrade {
     DINING_HALL_UPGRADE(UpgradeType.ATTACK_UPGRADE), // +2 Attack
     LABORATORY_UPGRADE(null), // Kein upgrade
     CORRIDOR_UPGRADE(UpgradeType.ARMOUR_UPGRADE), // +3 Armour
-    PANTRY_2_UPGRADE(null), // Kein upgrade
     FINAL_ROOM_UPGRADE(null); // Kein upgrade
 
     private final UpgradeType upgradeType;
@@ -44,8 +43,6 @@ public enum RoomUpgrade {
                 LABORATORY_UPGRADE;
             case CORRIDOR ->
                 CORRIDOR_UPGRADE;
-            case PANTRY_2 ->
-                PANTRY_2_UPGRADE;
             case FINAL_ROOM ->
                 FINAL_ROOM_UPGRADE;
             default ->
