@@ -14,10 +14,7 @@ public class MainMenuScreen extends GameScreen {
     private int selectedOption = 0;
     private final String[] menuOptions = {
         "► Neues Spiel starten",
-        "► Spiel fortsetzen",
         "► Einstellungen",
-        "► Anleitung",
-        "► Credits",
         "► Spiel beenden"
     };
 
@@ -179,19 +176,12 @@ public class MainMenuScreen extends GameScreen {
         switch (selectedOption) {
             case 0 -> // Neues Spiel
                 screenManager.switchToScreen("characterSelection");
-            case 1 -> {
-            }
-            case 2 -> // Einstellungen
+            case 1 -> // Einstellungen
                 screenManager.switchToScreen("settings");
-            case 3 -> // Anleitung
-                screenManager.switchToScreen("help");
-            case 4 -> // Credits
-                screenManager.switchToScreen("credits");
-            case 5 -> // Beenden
+            case 2 -> // Beenden
                 screenManager.stopRunning();
         }
         // Fortsetzen
-        // TODO: Lade Spielstand
     }
 
     @Override
@@ -207,6 +197,6 @@ public class MainMenuScreen extends GameScreen {
     @Override
     public boolean onEscape() {
         // Im Hauptmenü: ESC beendet das Spiel
-        return selectedOption == 5; // Nur wenn "Beenden" ausgewählt
+        return selectedOption == 2; // Nur wenn "Beenden" ausgewählt
     }
 }
