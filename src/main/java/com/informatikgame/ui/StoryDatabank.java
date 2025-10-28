@@ -6,7 +6,7 @@ public enum StoryDatabank {
     INTRO_ROOM("""
         Du wachst benommen in einem zerschlagenen Labor auf. Blutspuren ziehen sich über den Boden, und flackernde Lichter tauchen alles in grelles Rot. 
         Eine Tür steht einen Spalt offen - dein einziger Ausweg. Ein einsamer Zombie schlurft durch die Trümmer. Du greifst nach deiner Waffe ...
-    """),
+    """), // TODO: Blutspuren weg
     INTRO_ROOM_END("""
         Du hast den Zombie erfolgreich besiegt! Zwischen den Trümmern entdeckst du eine zerfetzte Bandage, die deine Wunden heilt. (+5 HP)
         Vorsichtig bewegst du dich weiter und nimmst einen beißenden Gestank wahr. Die nächste Tür quietscht, als du sie aufstößt, und ein kalter Windhauch schlägt dir entgegen...
@@ -15,7 +15,7 @@ public enum StoryDatabank {
     FLOOR_ROOM("""
         Du trittst in den nächsten Raum ein und spürst die stickige Luft. Blutige Spuren ziehen sich über den Boden, und irgendwo klirren zerbrochene Glasflaschen. 
         Ein Mini-Zombie taucht aus der Dunkelheit auf - du musst reagieren!
-    """),
+    """), // TODO: Blutige Spuren weg
     FLOOR_ROOM_END("""
         Du konntest das Monster besiegen. Deine Lebensenergie wird durch eine gefundene Bandage wiederhergestellt. (+5 HP)
     """),
@@ -39,7 +39,7 @@ public enum StoryDatabank {
     DINING_HALL("""
         Die Mensa liegt vor dir, zerstörtes Mobiliar und Blutflecken überall. Fünf Gegner stürmen auf dich zu - Mini-Zombies und mutierte Wissenschaftler. 
         Kein Rückzug möglich, bereite dich auf den Kampf vor!
-    """),
+    """), // TODO: Blutflecken weg
     DINING_HALL_END("""
         Nach dem erbitterten Kampf spürst du, wie deine Angriffe präziser und stärker werden. (+2 Attack)
     """),
@@ -63,7 +63,7 @@ public enum StoryDatabank {
     FINAL_ROOM("""
         Die letzte Sicherheitstür öffnet sich und enthüllt ein riesiges Labor. Maschinen pfeifen, Flüssigkeiten blubbern in Tanks. 
         In der Mitte steht der mutierte Superzombie, zusammengesetzt aus Dutzenden Leichen. Nur der Kampf zählt jetzt.
-    """),
+    """), // TODO: Leichen weg
     FINAL_ROOM_END("""
         Du hast es geschafft! Du besiegst den mutierten Mega-Zombie und sicherst das Serum. 
         Dank deines Einsatzes konnte die Menschheit gerettet werden.
