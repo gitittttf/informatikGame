@@ -117,6 +117,7 @@ public class GameManager implements FightManager.CombatEventListener {
     private final Queue<String> inputQueue;
     private boolean waitingForInput;
     private boolean gameRunning;
+    private boolean tutorialModeEnabled;
 
     private final String[] roomNames = {
         "Eingangsbereich",
@@ -144,6 +145,15 @@ public class GameManager implements FightManager.CombatEventListener {
 
     public void setEventListener(GameEventListener listener) {
         this.eventListener = listener;
+    }
+
+    // Tutorial mode flag (used by UI for guided flow)
+    public void setTutorialModeEnabled(boolean enabled) {
+        this.tutorialModeEnabled = enabled;
+    }
+
+    public boolean isTutorialModeEnabled() {
+        return this.tutorialModeEnabled;
     }
 
     /**

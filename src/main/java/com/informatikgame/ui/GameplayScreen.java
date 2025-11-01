@@ -48,6 +48,41 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     // Gegner-Liste
     private Enemy[] currentEnemies = new Enemy[0];
 
+    // Combat tutorial state
+    private enum CombatTutorialState {
+        NOT_IN_TUTORIAL,           // Tutorial disabled or completed
+        INTRO,                     // Section 1: Overall introduction
+        INTRO_AWAITING,            // Waiting for ENTER after intro
+        STATUS_BAR,                // Section 2: Explaining status bar
+        STATUS_BAR_AWAITING,       // Waiting for ENTER
+        PLAYER_PANEL,              // Section 3: Explaining player panel
+        PLAYER_PANEL_AWAITING,     // Waiting for ENTER
+        PLAYER_PANEL_PART2,        // Section 4: Finte/Wuchtschlag details  
+        PLAYER_PANEL_PART2_AWAITING, // Waiting for ENTER
+        COMBAT_ANIMATION,          // Section 5: Middle animation
+        COMBAT_ANIMATION_AWAITING, // Waiting for ENTER
+        INFO_PANEL,                // Section 6: Info panel
+        INFO_PANEL_AWAITING,       // Waiting for ENTER
+        COMBAT_LOG,                // Section 7: Combat log
+        COMBAT_LOG_AWAITING,       // Waiting for ENTER
+        TUTORIAL_COMPLETE          // Tutorial finished, normal gameplay
+    }
+
+    private CombatTutorialState tutorialState = CombatTutorialState.NOT_IN_TUTORIAL;
+    private boolean combatTutorialEnabled = false;
+    private boolean combatTutorialCompleted = false;
+    private int tutorialStartFrame = 0;
+    private String currentTutorialText = "";
+
+    // Tutorial text constants
+    private static final String TUTORIAL_INTRO = "Willkommen im Kampfbildschirm! Hier kämpfst du gegen Gegner in einem rundenbasierten System. Jede Runde kannst du einen Angriff wählen.";
+    private static final String TUTORIAL_STATUS_BAR = "Die obere Leiste zeigt dir den aktuellen Raum, deinen Status (Kampf oder Erkundung) und die Karte (drücke M).";
+    private static final String TUTORIAL_PLAYER_PANEL = "Im linken Bereich wählst du deinen Angriff. Nutze die Pfeiltasten um einen Gegner auszuwählen (Schritt 1), dann wähle dein Finte-Level (Schritt 2), und dein Wuchtschlag-Level (Schritt 3). Drücke ENTER nach jedem Schritt.";
+    private static final String TUTORIAL_PLAYER_PANEL_PART2 = "Finte erhöht deinen Angriffswert, aber senkt deine Verteidigung. Wuchtschlag erhöht deinen Schaden, aber senkt ebenfalls deine Verteidigung. Wähle weise!";
+    private static final String TUTORIAL_COMBAT_ANIMATION = "In der Mitte siehst du eine kleine Animation des Kampfes zwischen dir und dem Gegner.";
+    private static final String TUTORIAL_INFO_PANEL = "Auf der rechten Seite siehst du alle Gegner im Raum, welcher Gegner ausgewählt ist, und Informationen über jeden Gegner.";
+    private static final String TUTORIAL_COMBAT_LOG = "Unten siehst du das Kampf-Protokoll. Hier werden alle Aktionen und Ereignisse des Kampfes angezeigt.";
+
     public int getSelectedAction() {
         return selectedAction;
     }
@@ -217,6 +252,14 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         combatStartTime = System.currentTimeMillis();
         lastScheduledDisplayTime = combatStartTime;
         messageQueue.clear(); // Clear any previous queued messages
+        
+        // Check if we should start combat tutorial
+        if (gameManager.isTutorialModeEnabled() && !combatTutorialCompleted) {
+            combatTutorialEnabled = true;
+            tutorialState = CombatTutorialState.INTRO;
+            currentTutorialText = TUTORIAL_INTRO;
+            tutorialStartFrame = animationFrame;
+        }
     }
 
     @Override
@@ -308,14 +351,29 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             case VICTORY ->
                 drawVictoryScreen(graphics);
             default -> {
-                // Normales 3-Spalten-Layout
-                int mainAreaY = 3;
-                int columnWidth = size.getColumns() / 3;
+                // Check if we should render with tutorial darkening
+                boolean shouldDarken = combatTutorialEnabled && 
+                    tutorialState != CombatTutorialState.NOT_IN_TUTORIAL &&
+                    tutorialState != CombatTutorialState.INTRO &&
+                    tutorialState != CombatTutorialState.INTRO_AWAITING;
+                
+                if (shouldDarken) {
+                    renderWithTutorialDarkening(graphics, size);
+                } else {
+                    // Normales 3-Spalten-Layout
+                    int mainAreaY = 3;
+                    int columnWidth = size.getColumns() / 3;
 
-                drawPlayerPanel(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
-                drawGameArea(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
-                drawInfoPanel(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
-                drawCombatLog(graphics, 0, size.getRows() - 15, size.getColumns(), 15); // TODO
+                    drawPlayerPanel(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+                    drawGameArea(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+                    drawInfoPanel(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+                    drawCombatLog(graphics, 0, size.getRows() - 15, size.getColumns(), 15);
+                }
+                
+                // Render tutorial box if active
+                if (combatTutorialEnabled && tutorialState != CombatTutorialState.NOT_IN_TUTORIAL) {
+                    renderCombatTutorialBox(graphics, size);
+                }
             }
         }
     }
@@ -356,6 +414,47 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         }
     }
 
+    private void drawStatusBarDarkened(TextGraphics graphics) {
+        TerminalSize size = screenManager.getSize();
+
+        // Darkened Hintergrund
+        TextColor bgColor = inCombat ? new TextColor.RGB(10, 0, 0) : new TextColor.RGB(0, 10, 0);
+        graphics.setBackgroundColor(bgColor);
+        graphics.setForegroundColor(new TextColor.RGB(85, 85, 0)); // Darkened yellow
+
+        for (int x = 0; x < size.getColumns(); x++) {
+            graphics.setCharacter(x, 0, ' ');
+            graphics.setCharacter(x, 1, ' ');
+        }
+
+        // Raum-Information
+        String roomInfo = String.format("RAUM %d/%d - %s",
+                currentRoomNumber + 1, totalRooms, currentRoomName);
+        graphics.putString(new TerminalPosition(2, 0), roomInfo);
+
+        // Status
+        String status = inCombat ? "[KAMPF]" : "[ERKUNDUNG]";
+        TextColor statusColor = inCombat ? new TextColor.RGB(85, 0, 0) : new TextColor.RGB(0, 85, 0);
+        graphics.setForegroundColor(statusColor);
+        graphics.putString(new TerminalPosition(size.getColumns() / 2 - status.length() / 2, 0), status);
+
+        // Map Shortcutanzeige
+        graphics.setForegroundColor(new TextColor.RGB(85, 85, 0)); // Darkened yellow
+        String mapShortcut = "M - Map";
+        graphics.putString(new TerminalPosition(size.getColumns() - mapShortcut.length() - 2, 0), mapShortcut);
+
+        // Trennlinie
+        TextColor primaryDarkened = new TextColor.RGB(
+            ScreenManager.PRIMARY_COLOR.getRed() / 3,
+            ScreenManager.PRIMARY_COLOR.getGreen() / 3,
+            ScreenManager.PRIMARY_COLOR.getBlue() / 3
+        );
+        graphics.setForegroundColor(primaryDarkened);
+        for (int x = 0; x < size.getColumns(); x++) {
+            graphics.setCharacter(x, 2, '═');
+        }
+    }
+
     private void drawGameArea(TextGraphics graphics, int x, int y, int width, int height) {
         drawBox(graphics, x, y, width - 1, height,
                 ScreenManager.PRIMARY_COLOR, ScreenManager.BACKGROUND_COLOR);
@@ -379,6 +478,37 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
             // Raum-ASCII-Art
             drawRoomVisualization(graphics, x, y + 10, width, height - 10);
+        }
+    }
+
+    private void drawGameAreaDarkened(TextGraphics graphics, int x, int y, int width, int height) {
+        TextColor primaryDarkened = new TextColor.RGB(
+            ScreenManager.PRIMARY_COLOR.getRed() / 3,
+            ScreenManager.PRIMARY_COLOR.getGreen() / 3,
+            ScreenManager.PRIMARY_COLOR.getBlue() / 3
+        );
+        drawBox(graphics, x, y, width - 1, height,
+                primaryDarkened, ScreenManager.BACKGROUND_COLOR);
+
+        if (inCombat) {
+            graphics.setForegroundColor(new TextColor.RGB(85, 0, 0)); // Darkened red
+            graphics.putString(new TerminalPosition(x + 2, y), "[ KAMPFZONE ]");
+
+            // Kampf-Animation (darkened)
+            drawCombatSceneDarkened(graphics, x, y, width, height);
+        } else {
+            graphics.setForegroundColor(new TextColor.RGB(85, 85, 0)); // Darkened yellow
+            graphics.putString(new TerminalPosition(x + 2, y), "[ " + currentRoomName.toUpperCase() + " ]");
+
+            // Raum-Beschreibung (darkened)
+            graphics.setForegroundColor(new TextColor.RGB(85, 85, 85)); // Darkened white
+            String[] lines = wrapText(currentRoomDescription, width - 6);
+            for (int i = 0; i < lines.length && i < 5; i++) {
+                graphics.putString(new TerminalPosition(x + 3, y + 3 + i), lines[i]);
+            }
+
+            // Raum-ASCII-Art (darkened)
+            drawRoomVisualizationDarkened(graphics, x, y + 10, width, height - 10);
         }
     }
 
@@ -416,6 +546,48 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         // Gegner rechts (wenn vorhanden)
         if (currentEnemies.length > selectedEnemy) {
             drawEnemyArt(graphics, x + width - 15, centerY - 2, currentEnemies[selectedEnemy]);
+        }
+    }
+
+    private void drawCombatSceneDarkened(TextGraphics graphics, int x, int y, int width, int height) {
+        int centerY = y + height / 2;
+
+        // Spieler links (animiert, darkened)
+        String[] playerArt = {
+            " ╔═╗ ",
+            " ║♦║ ",
+            " ╠═╣ ",
+            " ║║║ ",
+            " ╚╩╝ "
+        };
+
+        // Spieler-Position (leicht wackelnd im Kampf)
+        int playerX = x + 5;
+        if (inCombat && animationFrame % 20 < 10) {
+            playerX += 1;
+        }
+
+        TextColor secondaryDarkened = new TextColor.RGB(
+            ScreenManager.SECONDARY_COLOR.getRed() / 3,
+            ScreenManager.SECONDARY_COLOR.getGreen() / 3,
+            ScreenManager.SECONDARY_COLOR.getBlue() / 3
+        );
+        graphics.setForegroundColor(secondaryDarkened);
+        for (int i = 0; i < playerArt.length; i++) {
+            graphics.putString(new TerminalPosition(playerX, centerY - 2 + i), playerArt[i]);
+        }
+
+        // Kampf-Effekt in der Mitte (darkened)
+        if (animationFrame % 15 < 8) {
+            graphics.setForegroundColor(new TextColor.RGB(85, 85, 0)); // Darkened yellow
+            String[] effects = {"⚔", "💥", "✦", "◈"};
+            String effect = effects[(animationFrame / 15) % effects.length];
+            graphics.putString(new TerminalPosition(x + width / 2 - 1, centerY), effect);
+        }
+
+        // Gegner rechts (wenn vorhanden, darkened)
+        if (currentEnemies.length > selectedEnemy) {
+            drawEnemyArtDarkened(graphics, x + width - 15, centerY - 2, currentEnemies[selectedEnemy]);
         }
     }
 
@@ -470,6 +642,95 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         graphics.setForegroundColor(color);
         for (int i = 0; i < art.length; i++) {
             graphics.putString(new TerminalPosition(x, y + i), art[i]);
+        }
+    }
+
+    private void drawEnemyArtDarkened(TextGraphics graphics, int x, int y, Enemy enemy) {
+        String[] art;
+
+        // Wähle Art basierend auf Enemy-Typ
+        if (enemy.getType().contains("Mini")) {
+            art = new String[]{
+                " ╔═╗",
+                " ║☠║",
+                " ╚╬╝",
+                "  ║ ",
+                " ╱ ╲"
+            };
+        } else if (enemy.getType().contains("Scientist")) {
+            art = new String[]{
+                " ╔═╗",
+                " ║◉║",
+                " ╠═╣",
+                " ║║║",
+                " ╚╩╝"
+            };
+        } else if (enemy.getType().contains("Big")) {
+            art = new String[]{
+                "╔═══╗",
+                "║ ☠ ║",
+                "╠═══╣",
+                "║║║║║",
+                "╚╩═╩╝"
+            };
+        } else { // Boss
+            art = new String[]{
+                " ╔═══╗ ",
+                "╔╣ ☠ ╠╗",
+                "║╚═══╝║",
+                "║ ║║║ ║",
+                "╚═╩╩╩═╝"
+            };
+        }
+
+        // Farbe basierend auf HP (darkened)
+        TextColor color;
+        if (enemy.getLifeTotal() > enemy.getLifeTotal() * 0.66) {
+            color = new TextColor.RGB(85, 0, 0); // Darkened red
+        } else if (enemy.getLifeTotal() > enemy.getLifeTotal() * 0.33) {
+            color = new TextColor.RGB(85, 85, 0); // Darkened yellow
+        } else {
+            color = new TextColor.RGB(50, 50, 50); // Darkened black_bright
+        }
+
+        graphics.setForegroundColor(color);
+        for (int i = 0; i < art.length; i++) {
+            graphics.putString(new TerminalPosition(x, y + i), art[i]);
+        }
+    }
+
+    private void drawRoomVisualizationDarkened(TextGraphics graphics, int x, int y, int width, int height) {
+        // Dynamische Raum-Darstellung basierend auf currentRoomNumber
+        String[][] roomArts = {
+            // Eingang
+            {
+                "╔══════╪══════╗",
+                "║      ▼      ║",
+                "║  EINGANG    ║",
+                "╚═════════════╝"
+            },
+            // Flur
+            {
+                "╔═════════════╗",
+                "║ ░░░░░░░░░░░ ║",
+                "║─────────────║",
+                "╚═════════════╝"
+            },
+            // Bibliothek
+            {
+                "╔═════════════╗",
+                "║ ▓▓▓ ▓▓▓ ▓▓▓║",
+                "║ ▓▓▓ ▓▓▓ ▓▓▓║",
+                "╚═════════════╝"
+            }
+        };
+
+        String[] art = roomArts[Math.min(currentRoomNumber, roomArts.length - 1)];
+
+        graphics.setForegroundColor(new TextColor.RGB(50, 50, 50)); // Darkened black_bright
+        for (int i = 0; i < art.length && i < height; i++) {
+            int centerX = x + (width - art[i].length()) / 2;
+            graphics.putString(new TerminalPosition(centerX, y + i), art[i]);
         }
     }
 
@@ -656,6 +917,14 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             }
 
             case COMBAT -> {
+                // Handle combat tutorial input first
+                if (combatTutorialEnabled && isInTutorialAwaitingState()) {
+                    if (keyStroke.getKeyType() == KeyType.Enter) {
+                        progressCombatTutorial();
+                    }
+                    return; // Block other input during tutorial
+                }
+                
                 // Check for map key first
                 if (keyStroke.getKeyType() == KeyType.Character
                         && (keyStroke.getCharacter() == 'm' || keyStroke.getCharacter() == 'M')) {
@@ -829,6 +1098,55 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         }
     }
 
+    private void drawPlayerPanelDarkened(TextGraphics graphics, int x, int y, int width, int height) {
+        TextColor primaryDarkened = new TextColor.RGB(
+            ScreenManager.PRIMARY_COLOR.getRed() / 3,
+            ScreenManager.PRIMARY_COLOR.getGreen() / 3,
+            ScreenManager.PRIMARY_COLOR.getBlue() / 3
+        );
+        drawBox(graphics, x, y, width - 1, height,
+                primaryDarkened, ScreenManager.BACKGROUND_COLOR);
+
+        graphics.setForegroundColor(new TextColor.RGB(85, 85, 0)); // Darkened yellow
+        graphics.putString(new TerminalPosition(x + 2, y), "[ SPIELER ]");
+
+        // Player health bar (darkened)
+        drawHealthBarDarkened(graphics, x + 2, y + 2, width - 6,
+                "HP", playerHP, playerMaxHP, new TextColor.RGB(85, 0, 0));
+
+        // Combat input instructions (darkened)
+        if (inCombat) {
+            graphics.setForegroundColor(new TextColor.RGB(85, 85, 85)); // Darkened white
+            int instructionY = y + 4;
+
+            switch (combatInputState) {
+                case SELECTING_ENEMY -> {
+                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Wähle Gegner:");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 1-" + currentEnemies.length);
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Weiter");
+                }
+                case SELECTING_FINTE -> {
+                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Finte Level:");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 0-" + gameManager.getPlayer().getFinteLevel());
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Weiter");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 3), "ESC: Zurück");
+                }
+                case SELECTING_WUCHTSCHLAG -> {
+                    graphics.putString(new TerminalPosition(x + 2, instructionY), "Wuchtschlag Level:");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "← → oder 0-" + gameManager.getPlayer().getWuchtschlagLevel());
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 2), "ENTER: Angriff!");
+                    graphics.putString(new TerminalPosition(x + 2, instructionY + 3), "ESC: Zurück");
+                }
+            }
+
+            // Show current selection (darkened)
+            graphics.setForegroundColor(new TextColor.RGB(0, 85, 85)); // Darkened cyan
+            graphics.putString(new TerminalPosition(x + 2, instructionY + 5),
+                    String.format("Ziel: %d, Finte: %d, Wuchtschlag: %d",
+                            selectedEnemyIndex + 1, selectedFinteLevel, selectedWuchtschlagLevel));
+        }
+    }
+
     private void drawInfoPanel(TextGraphics graphics, int x, int y, int width, int height) {
         drawBox(graphics, x, y, width - 1, height,
                 ScreenManager.PRIMARY_COLOR, ScreenManager.BACKGROUND_COLOR);
@@ -887,6 +1205,69 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         }
     }
 
+    private void drawInfoPanelDarkened(TextGraphics graphics, int x, int y, int width, int height) {
+        TextColor primaryDarkened = new TextColor.RGB(
+            ScreenManager.PRIMARY_COLOR.getRed() / 3,
+            ScreenManager.PRIMARY_COLOR.getGreen() / 3,
+            ScreenManager.PRIMARY_COLOR.getBlue() / 3
+        );
+        drawBox(graphics, x, y, width - 1, height,
+                primaryDarkened, ScreenManager.BACKGROUND_COLOR);
+
+        graphics.setForegroundColor(new TextColor.RGB(85, 85, 0)); // Darkened yellow
+        graphics.putString(new TerminalPosition(x + 2, y), "[ INFO ]");
+
+        if (inCombat && currentEnemies.length > 0) {
+            // Split the panel in half horizontally
+            int topHalfHeight = (height / 2) - 3;
+            int bottomHalfY = y + topHalfHeight;
+            int bottomHalfHeight = height - topHalfHeight;
+
+            // Draw horizontal separator line (darkened)
+            graphics.setForegroundColor(primaryDarkened);
+            for (int i = 1; i < width - 1; i++) {
+                graphics.setCharacter(x + i - 1, bottomHalfY, '═');
+            }
+            graphics.setCharacter(x, bottomHalfY, '╠');
+            graphics.setCharacter(x + width - 2, bottomHalfY, '╣');
+
+            // Top half: Detailed enemy info for selected enemy (darkened)
+            if (selectedEnemyIndex >= 0 && selectedEnemyIndex < currentEnemies.length) {
+                Enemy selectedEnemy = currentEnemies[selectedEnemyIndex];
+
+                graphics.setForegroundColor(new TextColor.RGB(0, 85, 85)); // Darkened cyan
+                graphics.putString(new TerminalPosition(x + 2, y + 2), "Aktueller Gegner:");
+
+                // Enemy name/type
+                graphics.setForegroundColor(new TextColor.RGB(85, 85, 85)); // Darkened white
+                graphics.putString(new TerminalPosition(x + 2, y + 4), selectedEnemy.getType());
+
+                // Enemy HP bar (darkened)
+                drawHealthBarDarkened(graphics, x + 2, y + 6, width - 6,
+                        "HP", selectedEnemy.getLifeTotal(), selectedEnemy.getMaxLife(), new TextColor.RGB(85, 0, 0));
+            }
+
+            // Bottom half: Enemy list (darkened)
+            graphics.setForegroundColor(new TextColor.RGB(85, 85, 85)); // Darkened white
+            graphics.putString(new TerminalPosition(x + 2, bottomHalfY + 1), "Alle Gegner:");
+            for (int i = 0; i < currentEnemies.length; i++) {
+                Enemy enemy = currentEnemies[i];
+                TextColor color = (i == selectedEnemyIndex) ? new TextColor.RGB(0, 85, 85) : new TextColor.RGB(85, 85, 85);
+                graphics.setForegroundColor(color);
+
+                String enemyInfo = String.format("%d. %s (%d HP)",
+                        i + 1, enemy.getType(), enemy.getLifeTotal());
+                int lineY = bottomHalfY + 3 + i;
+                if (lineY < y + height - 1) { // Make sure we don't draw outside the box
+                    graphics.putString(new TerminalPosition(x + 2, lineY), enemyInfo);
+                }
+            }
+        } else {
+            graphics.setForegroundColor(new TextColor.RGB(85, 85, 85)); // Darkened white
+            graphics.putString(new TerminalPosition(x + 2, y + 2), "Erkunde den Raum...");
+        }
+    }
+
     private void drawCombatLog(TextGraphics graphics, int x, int y, int width, int height) {
         drawBox(graphics, x, y, width, height,
                 ScreenManager.SECONDARY_COLOR, ScreenManager.BACKGROUND_COLOR);
@@ -908,6 +1289,37 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
             // Set color based on message type
             TextColor messageColor = getColorForMessageType(coloredMessage.type);
+            graphics.setForegroundColor(messageColor);
+            graphics.putString(new TerminalPosition(x + 2, logStartY + (i - startIndex)), message);
+        }
+    }
+
+    private void drawCombatLogDarkened(TextGraphics graphics, int x, int y, int width, int height) {
+        TextColor secondaryDarkened = new TextColor.RGB(
+            ScreenManager.SECONDARY_COLOR.getRed() / 3,
+            ScreenManager.SECONDARY_COLOR.getGreen() / 3,
+            ScreenManager.SECONDARY_COLOR.getBlue() / 3
+        );
+        drawBox(graphics, x, y, width, height,
+                secondaryDarkened, ScreenManager.BACKGROUND_COLOR);
+
+        graphics.setForegroundColor(new TextColor.RGB(0, 85, 85)); // Darkened cyan
+        graphics.putString(new TerminalPosition(x + 2, y), "[ KAMPF-LOG ]");
+
+        // Display recent combat log messages with color coding (darkened)
+        int logStartY = y + 1;
+        int maxLines = height - 2;
+
+        int startIndex = Math.max(0, coloredCombatLog.size() - maxLines);
+        for (int i = startIndex; i < coloredCombatLog.size(); i++) {
+            ColoredCombatMessage coloredMessage = coloredCombatLog.get(i);
+            String message = coloredMessage.message;
+            if (message.length() > width - 4) {
+                message = message.substring(0, width - 7) + "...";
+            }
+
+            // Set color based on message type (darkened)
+            TextColor messageColor = getColorForMessageTypeDarkened(coloredMessage.type);
             graphics.setForegroundColor(messageColor);
             graphics.putString(new TerminalPosition(x + 2, logStartY + (i - startIndex)), message);
         }
@@ -935,6 +1347,31 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                 return new TextColor.RGB(0, 255, 127); // Spring green
             default:
                 return TextColor.ANSI.WHITE;
+        }
+    }
+
+    private TextColor getColorForMessageTypeDarkened(FightManager.CombatMessageType type) {
+        switch (type) {
+            case ROUND_START:
+                return new TextColor.RGB(0, 85, 85); // Darkened cyan
+            case PLAYER_ACTION:
+                return new TextColor.RGB(0, 85, 0); // Darkened green
+            case ENEMY_ACTION:
+                return new TextColor.RGB(85, 0, 0); // Darkened red
+            case UPGRADE:
+                return new TextColor.RGB(85, 0, 85); // Darkened magenta
+            case SPECIAL_MOVE:
+                return new TextColor.RGB(85, 85, 0); // Darkened yellow
+            case DAMAGE:
+                return new TextColor.RGB(85, 46, 0); // Darkened orange
+            case DEFENSE:
+                return new TextColor.RGB(0, 0, 85); // Darkened blue
+            case COMBAT_START:
+                return new TextColor.RGB(85, 71, 0); // Darkened gold
+            case COMBAT_END:
+                return new TextColor.RGB(0, 85, 42); // Darkened spring green
+            default:
+                return new TextColor.RGB(85, 85, 85); // Darkened white
         }
     }
 
@@ -1005,6 +1442,34 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         graphics.putString(new TerminalPosition(x + label.length() + 3 + barWidth, y), numbers);
     }
 
+    private void drawHealthBarDarkened(TextGraphics graphics, int x, int y, int width,
+            String label, int current, int max, TextColor color) {
+        // Draw label (darkened)
+        graphics.setForegroundColor(new TextColor.RGB(85, 85, 85)); // Darkened white
+        graphics.putString(new TerminalPosition(x, y), label + ":");
+
+        // Calculate bar width (leave space for label and numbers)
+        int barWidth = width - label.length() - 10;
+        int filledWidth = max > 0 ? (current * barWidth) / max : 0;
+
+        // Draw health bar background (darkened)
+        graphics.setForegroundColor(new TextColor.RGB(50, 50, 50)); // Darkened black_bright
+        for (int i = 0; i < barWidth; i++) {
+            graphics.setCharacter(x + label.length() + 2 + i, y, '█');
+        }
+
+        // Draw filled portion (darkened color passed in)
+        graphics.setForegroundColor(color);
+        for (int i = 0; i < filledWidth; i++) {
+            graphics.setCharacter(x + label.length() + 2 + i, y, '█');
+        }
+
+        // Draw numbers (darkened)
+        graphics.setForegroundColor(new TextColor.RGB(85, 85, 85)); // Darkened white
+        String numbers = current + "/" + max;
+        graphics.putString(new TerminalPosition(x + label.length() + 3 + barWidth, y), numbers);
+    }
+
     // Helper method to draw boxes
     protected void drawBox(TextGraphics graphics, int x, int y, int width, int height,
             TextColor borderColor, TextColor bgColor) {
@@ -1051,6 +1516,11 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         // Process queued combat messages
         processQueuedMessages();
 
+        // Update combat tutorial state
+        if (combatTutorialEnabled && tutorialState != CombatTutorialState.NOT_IN_TUTORIAL) {
+            updateCombatTutorial();
+        }
+
         // Update story animation
         if (currentState == UIState.STORY_DISPLAY && !waitingForStoryInput) {
             storyAnimationFrame++;
@@ -1058,6 +1528,156 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             if (storyAnimationFrame % 30 == 0 && visibleStoryLines < storyLines.size()) {
                 visibleStoryLines++;
             }
+        }
+    }
+
+    private void updateCombatTutorial() {
+        // Check if typewriter animation finished
+        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 2;
+        if (charsShown >= currentTutorialText.length()) {
+            // Move to awaiting state if not already there
+            switch (tutorialState) {
+                case INTRO -> tutorialState = CombatTutorialState.INTRO_AWAITING;
+                case STATUS_BAR -> tutorialState = CombatTutorialState.STATUS_BAR_AWAITING;
+                case PLAYER_PANEL -> tutorialState = CombatTutorialState.PLAYER_PANEL_AWAITING;
+                case PLAYER_PANEL_PART2 -> tutorialState = CombatTutorialState.PLAYER_PANEL_PART2_AWAITING;
+                case COMBAT_ANIMATION -> tutorialState = CombatTutorialState.COMBAT_ANIMATION_AWAITING;
+                case INFO_PANEL -> tutorialState = CombatTutorialState.INFO_PANEL_AWAITING;
+                case COMBAT_LOG -> tutorialState = CombatTutorialState.COMBAT_LOG_AWAITING;
+            }
+        }
+    }
+
+    private boolean isInTutorialAwaitingState() {
+        return tutorialState == CombatTutorialState.INTRO_AWAITING ||
+               tutorialState == CombatTutorialState.STATUS_BAR_AWAITING ||
+               tutorialState == CombatTutorialState.PLAYER_PANEL_AWAITING ||
+               tutorialState == CombatTutorialState.PLAYER_PANEL_PART2_AWAITING ||
+               tutorialState == CombatTutorialState.COMBAT_ANIMATION_AWAITING ||
+               tutorialState == CombatTutorialState.INFO_PANEL_AWAITING ||
+               tutorialState == CombatTutorialState.COMBAT_LOG_AWAITING;
+    }
+
+    private void renderWithTutorialDarkening(TextGraphics graphics, TerminalSize size) {
+        int mainAreaY = 3;
+        int columnWidth = size.getColumns() / 3;
+        
+        // Determine which section to keep bright
+        boolean darkenStatusBar = !isStatusBarSection();
+        boolean darkenPlayerPanel = !isPlayerPanelSection();
+        boolean darkenGameArea = !isGameAreaSection();
+        boolean darkenInfoPanel = !isInfoPanelSection();
+        boolean darkenCombatLog = !isCombatLogSection();
+        
+        // Draw status bar (darkened or normal)
+        if (darkenStatusBar) {
+            drawStatusBarDarkened(graphics);
+        } else {
+            drawStatusBar(graphics);
+        }
+        
+        // Draw sections with selective darkening
+        if (darkenPlayerPanel) {
+            drawPlayerPanelDarkened(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+        } else {
+            drawPlayerPanel(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+        }
+        
+        if (darkenGameArea) {
+            drawGameAreaDarkened(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+        } else {
+            drawGameArea(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+        }
+        
+        if (darkenInfoPanel) {
+            drawInfoPanelDarkened(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+        } else {
+            drawInfoPanel(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
+        }
+        
+        if (darkenCombatLog) {
+            drawCombatLogDarkened(graphics, 0, size.getRows() - 15, size.getColumns(), 15);
+        } else {
+            drawCombatLog(graphics, 0, size.getRows() - 15, size.getColumns(), 15);
+        }
+    }
+
+    private boolean isStatusBarSection() {
+        return tutorialState == CombatTutorialState.STATUS_BAR ||
+               tutorialState == CombatTutorialState.STATUS_BAR_AWAITING;
+    }
+
+    private boolean isPlayerPanelSection() {
+        return tutorialState == CombatTutorialState.PLAYER_PANEL ||
+               tutorialState == CombatTutorialState.PLAYER_PANEL_AWAITING ||
+               tutorialState == CombatTutorialState.PLAYER_PANEL_PART2 ||
+               tutorialState == CombatTutorialState.PLAYER_PANEL_PART2_AWAITING;
+    }
+
+    private boolean isGameAreaSection() {
+        return tutorialState == CombatTutorialState.COMBAT_ANIMATION ||
+               tutorialState == CombatTutorialState.COMBAT_ANIMATION_AWAITING;
+    }
+
+    private boolean isInfoPanelSection() {
+        return tutorialState == CombatTutorialState.INFO_PANEL ||
+               tutorialState == CombatTutorialState.INFO_PANEL_AWAITING;
+    }
+
+    private boolean isCombatLogSection() {
+        return tutorialState == CombatTutorialState.COMBAT_LOG ||
+               tutorialState == CombatTutorialState.COMBAT_LOG_AWAITING;
+    }
+
+    private void progressCombatTutorial() {
+        tutorialStartFrame = animationFrame;
+        
+        switch (tutorialState) {
+            case INTRO_AWAITING -> {
+                tutorialState = CombatTutorialState.STATUS_BAR;
+                currentTutorialText = TUTORIAL_STATUS_BAR;
+            }
+            case STATUS_BAR_AWAITING -> {
+                tutorialState = CombatTutorialState.PLAYER_PANEL;
+                currentTutorialText = TUTORIAL_PLAYER_PANEL;
+            }
+            case PLAYER_PANEL_AWAITING -> {
+                tutorialState = CombatTutorialState.PLAYER_PANEL_PART2;
+                currentTutorialText = TUTORIAL_PLAYER_PANEL_PART2;
+            }
+            case PLAYER_PANEL_PART2_AWAITING -> {
+                tutorialState = CombatTutorialState.COMBAT_ANIMATION;
+                currentTutorialText = TUTORIAL_COMBAT_ANIMATION;
+            }
+            case COMBAT_ANIMATION_AWAITING -> {
+                tutorialState = CombatTutorialState.INFO_PANEL;
+                currentTutorialText = TUTORIAL_INFO_PANEL;
+            }
+            case INFO_PANEL_AWAITING -> {
+                tutorialState = CombatTutorialState.COMBAT_LOG;
+                currentTutorialText = TUTORIAL_COMBAT_LOG;
+            }
+            case COMBAT_LOG_AWAITING -> {
+                tutorialState = CombatTutorialState.TUTORIAL_COMPLETE;
+                combatTutorialEnabled = false;
+                combatTutorialCompleted = true;
+            }
+        }
+    }
+
+    private void renderCombatTutorialBox(TextGraphics graphics, TerminalSize size) {
+        boolean isAwaitingConfirmation = isInTutorialAwaitingState();
+        
+        // Special positioning for combat log section
+        if (isCombatLogSection()) {
+            // Position box ABOVE combat log instead of at bottom
+            int customY = size.getRows() - 20; // Adjust as needed
+            TutorialBoxRenderer.renderTutorialBox(graphics, size, currentTutorialText,
+                animationFrame, tutorialStartFrame, isAwaitingConfirmation, false, customY);
+        } else {
+            // Default bottom position
+            TutorialBoxRenderer.renderTutorialBox(graphics, size, currentTutorialText,
+                animationFrame, tutorialStartFrame, isAwaitingConfirmation, false);
         }
     }
 

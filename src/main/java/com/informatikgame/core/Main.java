@@ -7,6 +7,7 @@ import com.informatikgame.ui.GameplayScreen;
 import com.informatikgame.ui.MainMenuScreen;
 import com.informatikgame.ui.ScreenManager;
 import com.informatikgame.ui.SettingsScreen;
+import com.informatikgame.ui.TutorialChoiceScreen;
 
 public class Main {
 
@@ -30,6 +31,11 @@ public class Main {
             screenManager.registerScreen("game", gameplayScreen);
 
             screenManager.registerScreen("settings", new SettingsScreen());
+
+            // Tutorial choice screen between menu and character selection
+            TutorialChoiceScreen tutorialChoiceScreen = new TutorialChoiceScreen();
+            tutorialChoiceScreen.setGameManager(gameManager);
+            screenManager.registerScreen("tutorialChoice", tutorialChoiceScreen);
 
             CharacterSelectionScreen characterSelectionScreen = new CharacterSelectionScreen();
             characterSelectionScreen.setGameManager(gameManager);
