@@ -274,7 +274,12 @@ public class CharacterSelectionScreen extends GameScreen {
         };
 
         // Initialize game with selected player type
-        gameManager.initializeGameWithPlayer(selectedType);
+        // Use tutorial world if tutorial mode is enabled, otherwise use normal world
+        if (gameManager.isTutorialModeEnabled()) {
+            gameManager.initializeTutorialWorld(selectedType);
+        } else {
+            gameManager.initializeGameWithPlayer(selectedType);
+        }
         screenManager.switchToScreen("game");
     }
 

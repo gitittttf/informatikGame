@@ -2,6 +2,13 @@ package com.informatikgame.ui;
 
 public enum StoryDatabank {
 
+    // ===================== TUTORIAL =====================
+    TUTORIAL_ROOM("""
+        Dies ist ein Tutorial. Normalerweise würde hier die Geschichte stehen. Sie wird dich durch das gesamte Spiel führen und dir erklären, was passiert.
+    """),
+    TUTORIAL_ROOM_END("""
+        Glückwunsch! Du hast den Gegner besiegt! Je nach Geschichte würdest du jetzt einige Verbesserungen für deinen Charakter erhalten. Jetzt geh und spiele das Spiel!
+    """),
     // ===================== INTRO =====================
     INTRO_ROOM("""
         Du wachst benommen in einem zerschlagenen Labor auf. Blutspuren ziehen sich über den Boden, und flackernde Lichter tauchen alles in grelles Rot. 
