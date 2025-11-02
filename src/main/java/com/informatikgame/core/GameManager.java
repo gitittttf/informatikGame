@@ -353,7 +353,14 @@ public class GameManager implements FightManager.CombatEventListener {
 
     private void victory() {
         gameRunning = false;
-        notifyLog("SIEG! Du hast alle Räume gemeistert!");
+        
+        // Check if this is tutorial mode - use explicit flag for failsafe detection
+        if (tutorialModeEnabled) {
+            notifyLog("✅ TUTORIAL ABGESCHLOSSEN! Gehe zurück zum Hauptmenü um das echte Spiel zu starten.");
+        } else {
+            notifyLog("SIEG! Du hast alle Räume gemeistert!");
+        }
+        
         if (eventListener != null) {
             eventListener.onVictory();
         }

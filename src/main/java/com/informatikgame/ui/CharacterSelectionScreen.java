@@ -294,7 +294,7 @@ public class CharacterSelectionScreen extends GameScreen {
 
         // Advance tutorial state when typewriter finished
         if (tutorialState == TutorialState.EXPLAINING_SELECTION || tutorialState == TutorialState.EXPLAINING_STATS) {
-            int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 2; // ~20 cps
+            int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 3; // ~30 cps (faster)
             if (tutorialText != null && charsShown >= tutorialText.length()) {
                 tutorialState = TutorialState.AWAITING_CONFIRMATION;
             }
@@ -343,7 +343,7 @@ public class CharacterSelectionScreen extends GameScreen {
 
     private void drawTutorialBox(TextGraphics graphics, TerminalSize size) {
         // Typewriter effect calculation
-        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 2; // ~20 cps
+        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 3; // ~30 cps (faster)
         charsShown = Math.min(charsShown, tutorialText.length());
         String textToShow = tutorialText.substring(0, charsShown);
 
@@ -405,7 +405,7 @@ public class CharacterSelectionScreen extends GameScreen {
 
     private void drawDarkenedTutorialBox(TextGraphics graphics, TerminalSize size) {
         // Similar to drawTutorialBox but with darkened colors
-        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 2;
+        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 3;
         charsShown = Math.min(charsShown, tutorialText.length());
         String textToShow = tutorialText.substring(0, charsShown);
 

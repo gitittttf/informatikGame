@@ -2,6 +2,7 @@ package com.informatikgame.world;
 
 public enum EnemyType {
     //int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int finteLevel, int wuchtschlagLevel String enemyType
+    TUTORIAL_ENEMY(13, 0, 1, 5, 1, 1, 1, 0, 0, "Übungsgegner"),
     MINI_ZOMBIE(10, 1, 12, 10, 6, 1, 1, 1, 0, "Mini Zombie"),
     SCIENTIST(15, 0, 10, 12, 10, 4, 1, 2, 1, "Scientist"),
     BIG_ZOMBIE(20, 3, 6, 13, 8, 2, 2, 1, 2, "Big Zombie"),

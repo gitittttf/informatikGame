@@ -3,7 +3,7 @@ package com.informatikgame.world;
 public enum RoomType {
     //enemy list für jeden room
     TUTORIAL_ROOM(new EnemyType[]{
-        EnemyType.MINI_ZOMBIE
+        EnemyType.TUTORIAL_ENEMY
     }),
     ZOMBIE_ROOM(new EnemyType[]{
         EnemyType.MINI_ZOMBIE,

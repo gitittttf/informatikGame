@@ -118,11 +118,15 @@ public class FightManager {
     private boolean waitingForPlayerAction;
     private int currentRound;
     private PriorityQueue<Character> currentActionQueue;
+    private boolean pendingCombatEnd; // Flag to indicate combat should end when log is ready
+    private boolean waitingForLog; // Flag to pause combat until log finishes
 
     public FightManager(Player player) {
         this.player = player;
         this.waitingForPlayerAction = false;
         this.currentRound = 0;
+        this.pendingCombatEnd = false;
+        this.waitingForLog = false;
 
         // Set up combat event listeners for characters
         setupCombatEventListeners();
@@ -214,8 +218,10 @@ public class FightManager {
     }
 
     private void startRound() {
+        // Check if combat should end
         if (!player.isAlive() || enemiesLeftToRight.isEmpty()) {
-            endFight();
+            // Set flag to end combat - will be processed when combat log is ready
+            pendingCombatEnd = true;
             return;
         }
 
@@ -236,7 +242,22 @@ public class FightManager {
 
     private void processNextAction() {
         if (currentActionQueue.isEmpty()) {
-            // Round is finished, clean up dead enemies and start next round
+            // Round is finished, announce deaths BEFORE cleaning up dead enemies
+            long deathMessageDelay = 400; // Delay for death messages
+            for (Enemy enemy : enemiesLeftToRight) {
+                if (!enemy.isAlive()) {
+                    if (eventListener != null) {
+                        eventListener.onQueuedCombatMessage(
+                            enemy.getType() + " wurde besiegt!",
+                            CombatMessageType.DAMAGE,
+                            deathMessageDelay
+                        );
+                        deathMessageDelay += 400; // Stack messages if multiple enemies died
+                    }
+                }
+            }
+            
+            // Now clean up dead enemies
             this.enemiesLeftToRight.removeIf(character -> !character.isAlive());
 
             // Update GUI with current enemy state after removing dead ones
@@ -270,22 +291,23 @@ public class FightManager {
                 eventListener.onEnemyTurn(enemy);
             }
 
-            // Enemy attacks with random abilities
-            int randomNumberFinte = (int) (Math.random() * (enemy.getFinteLevel() + 1));
-            int randomNumberWuchtschlag = (int) (Math.random() * (enemy.getWuchtschlagLevel() + 1));
+        // Enemy attacks with random abilities
+        int randomNumberFinte = (int) (Math.random() * (enemy.getFinteLevel() + 1));
+        int randomNumberWuchtschlag = (int) (Math.random() * (enemy.getWuchtschlagLevel() + 1));
 
-            if (eventListener != null) {
-                eventListener.onQueuedCombatMessage(enemy.getType() + " ist am Zug!", CombatMessageType.ENEMY_ACTION, 0);
-            }
+        if (eventListener != null) {
+            eventListener.onQueuedCombatMessage(enemy.getType() + " ist am Zug!", CombatMessageType.ENEMY_ACTION, 0);
+        }
 
-            enemy.attack(this.player, randomNumberFinte, randomNumberWuchtschlag);
+        enemy.attack(this.player, randomNumberFinte, randomNumberWuchtschlag);
 
-            if (eventListener != null) {
-                eventListener.onPlayerHealthUpdate(player.getLifeTotal(), player.getMaxLife());
-            }
+        // Update player HP immediately
+        if (eventListener != null) {
+            eventListener.onPlayerHealthUpdate(player.getLifeTotal(), player.getMaxLife());
+        }
 
-            // Continue with next action 
-            processNextAction();
+        // Wait for combat log to finish before continuing
+        waitingForLog = true;
         }
     }
 
@@ -321,12 +343,14 @@ public class FightManager {
 
         player.attack(target, finteLevel, wuchtschlagLevel);
 
+        // Update enemy HP immediately
         if (eventListener != null) {
             eventListener.onEnemyHealthUpdate(enemiesLeftToRight.toArray(Enemy[]::new));
         }
 
         waitingForPlayerAction = false;
-        processNextAction();
+        // Wait for combat log to finish before continuing
+        waitingForLog = true;
     }
 
     public void executePlayerAction(int targetEnemyIndex, AttackType attackType) {
@@ -353,6 +377,43 @@ public class FightManager {
 
     public boolean isWaitingForPlayerAction() {
         return waitingForPlayerAction;
+    }
+
+    /**
+     * Update method - called every frame to check combat state and process actions
+     * when combat log is ready
+     */
+    public void update() {
+        // Check if we're waiting for log to finish
+        if (waitingForLog) {
+            // Check if combat log is ready (not busy)
+            boolean logReady = true;
+            if (eventListener != null && eventListener instanceof com.informatikgame.ui.GameplayScreen) {
+                com.informatikgame.ui.GameplayScreen gameplayScreen = (com.informatikgame.ui.GameplayScreen) eventListener;
+                logReady = !gameplayScreen.isCombatLogBusyForManager();
+            }
+            
+            if (logReady) {
+                // Log finished, continue combat
+                waitingForLog = false;
+                processNextAction();
+            }
+        }
+        
+        // Check if combat end is pending and combat log is ready
+        if (pendingCombatEnd) {
+            // Check if combat log is ready (not busy)
+            boolean logReady = true;
+            if (eventListener != null && eventListener instanceof com.informatikgame.ui.GameplayScreen) {
+                com.informatikgame.ui.GameplayScreen gameplayScreen = (com.informatikgame.ui.GameplayScreen) eventListener;
+                logReady = !gameplayScreen.isCombatLogBusyForManager();
+            }
+            
+            if (logReady) {
+                pendingCombatEnd = false;
+                endFight();
+            }
+        }
     }
 
     // ===== GETTER METHODEN =====

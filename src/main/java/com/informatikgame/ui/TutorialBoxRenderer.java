@@ -20,7 +20,7 @@ public class TutorialBoxRenderer {
     private static final int DEFAULT_MIN_HEIGHT = 5;
     
     // Typewriter effect speed (characters per frame)
-    private static final int TYPEWRITER_SPEED = 2;
+    private static final int TYPEWRITER_SPEED = 3;
     
     /**
      * Renders a tutorial box with typewriter effect at the default bottom position.
