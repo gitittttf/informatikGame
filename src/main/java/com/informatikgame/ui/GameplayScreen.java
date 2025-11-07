@@ -50,21 +50,21 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
     // Combat tutorial state
     private enum CombatTutorialState {
-        NOT_IN_TUTORIAL,           // Tutorial disabled or completed
-        INTRO,                     // Section 1: Overall introduction
-        INTRO_AWAITING,            // Waiting for ENTER after intro
-        STATUS_BAR,                // Section 2: Explaining status bar
-        STATUS_BAR_AWAITING,       // Waiting for ENTER
-        PLAYER_PANEL,              // Section 3: Explaining player panel
-        PLAYER_PANEL_AWAITING,     // Waiting for ENTER
-        PLAYER_PANEL_PART2,        // Section 4: Finte/Wuchtschlag details  
+        NOT_IN_TUTORIAL, // Tutorial disabled or completed
+        INTRO, // Section 1: Overall introduction
+        INTRO_AWAITING, // Waiting for ENTER after intro
+        STATUS_BAR, // Section 2: Explaining status bar
+        STATUS_BAR_AWAITING, // Waiting for ENTER
+        PLAYER_PANEL, // Section 3: Explaining player panel
+        PLAYER_PANEL_AWAITING, // Waiting for ENTER
+        PLAYER_PANEL_PART2, // Section 4: Finte/Wuchtschlag details  
         PLAYER_PANEL_PART2_AWAITING, // Waiting for ENTER
-        COMBAT_ANIMATION,          // Section 5: Middle animation
+        COMBAT_ANIMATION, // Section 5: Middle animation
         COMBAT_ANIMATION_AWAITING, // Waiting for ENTER
-        INFO_PANEL,                // Section 6: Info panel
-        INFO_PANEL_AWAITING,       // Waiting for ENTER
-        COMBAT_LOG,                // Section 7: Combat log
-        COMBAT_LOG_AWAITING,       // Waiting for ENTER
+        INFO_PANEL, // Section 6: Info panel
+        INFO_PANEL_AWAITING, // Waiting for ENTER
+        COMBAT_LOG, // Section 7: Combat log
+        COMBAT_LOG_AWAITING, // Waiting for ENTER
         TUTORIAL_COMPLETE          // Tutorial finished, normal gameplay
     }
 
@@ -92,7 +92,6 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         STORY_DISPLAY, // Story wird angezeigt (fullscreen)
         EXPLORATION, // Raum erkunden
         COMBAT, // Im Kampf
-        ROOM_CLEARED, // "Raum bereinigt!" popup (after combat won)
         ROOM_TRANSITION, // Zwischen Räumen
         MAP, // Karte anzeigen
         GAME_OVER, // Spiel vorbei
@@ -100,50 +99,39 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     }
     private UIState currentState = UIState.EXPLORATION;
     private UIState previousState = UIState.EXPLORATION; // Store state before showing map
-    
-    // Room cleared popup animation state
-    private enum RoomClearedState {
-        FADING_IN,     // Popup is fading in
-        FULLY_VISIBLE, // Popup fully visible, waiting for ENTER
-        FADING_OUT     // Popup is fading out
-    }
-    private RoomClearedState roomClearedState = RoomClearedState.FADING_IN;
-    private int roomClearedAnimationFrame = 0;
-    private static final int FADE_IN_DURATION = 30; // frames (1 second at 30fps)
-    private static final int FADE_OUT_DURATION = 20; // frames (0.66 seconds)
 
     // Tutorial map content
-    private static final String TUTORIAL_MAP_CONTENT = 
-        "+-------------------------------------------------[KARTE]----------------------------------------------------+\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                   +------------------------------------+                                   |\n" +
-        "|                               +--+                                      +--+                               |\n" +
-        "|                             -+                                              +-                             |\n" +
-        "|                            +                                                  |                            |\n" +
-        "|                            #                    [Tutorial]                    |                            |\n" +
-        "|                            +                                                  |                            |\n" +
-        "|                             -+                                              +-                             |\n" +
-        "|                               +--+                                      +--+                               |\n" +
-        "|                                   +------------------------------------+                                   |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "|                                                                                                            |\n" +
-        "+------------------------------------------------------------------------------------------------------------+";
+    private static final String TUTORIAL_MAP_CONTENT
+            = "+-------------------------------------------------[KARTE]----------------------------------------------------+\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                   +------------------------------------+                                   |\n"
+            + "|                               +--+                                      +--+                               |\n"
+            + "|                             -+                                              +-                             |\n"
+            + "|                            +                                                  |                            |\n"
+            + "|                            #                    [Tutorial]                    |                            |\n"
+            + "|                            +                                                  |                            |\n"
+            + "|                             -+                                              +-                             |\n"
+            + "|                               +--+                                      +--+                               |\n"
+            + "|                                   +------------------------------------+                                   |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "|                                                                                                            |\n"
+            + "+------------------------------------------------------------------------------------------------------------+";
 
     private final String mapContent
             = """
@@ -300,7 +288,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         combatStartTime = System.currentTimeMillis();
         lastScheduledDisplayTime = combatStartTime;
         messageQueue.clear(); // Clear any previous queued messages
-        
+
         // Check if we should start combat tutorial
         if (gameManager.isTutorialModeEnabled() && !combatTutorialCompleted) {
             combatTutorialEnabled = true;
@@ -313,18 +301,12 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     @Override
     public void onCombatEnd(boolean won) {
         inCombat = false;
-        // DON'T clear message queue yet - let messages finish during popup
+        messageQueue.clear(); // Clear any remaining queued messages
+        lastScheduledDisplayTime = 0; // Reset timeline
         if (won) {
-            // Transition to ROOM_CLEARED popup instead of going directly to next room
-            currentState = UIState.ROOM_CLEARED;
-            roomClearedState = RoomClearedState.FADING_IN;
-            roomClearedAnimationFrame = 0;
+            currentState = UIState.ROOM_TRANSITION;
             String message = ">>> Kampf gewonnen!";
             displayMessage(message, FightManager.CombatMessageType.COMBAT_END);
-        } else {
-            // Game over - clear queues
-            messageQueue.clear();
-            lastScheduledDisplayTime = 0;
         }
     }
 
@@ -354,8 +336,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     @Override
     public void onStoryDisplay(String storyText) {
         currentStoryText = storyText;
-        // isExitStory is true if we're coming from ROOM_TRANSITION or ROOM_CLEARED (after combat)
-        isExitStory = (currentState == UIState.ROOM_TRANSITION || currentState == UIState.ROOM_CLEARED);
+        isExitStory = (currentState == UIState.ROOM_TRANSITION);
         currentState = UIState.STORY_DISPLAY;
         // Prepare story for animated display
         prepareStoryDisplay(storyText);
@@ -409,19 +390,17 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                 drawStoryDisplay(graphics);
             case MAP ->
                 drawMap(graphics);
-            case ROOM_CLEARED ->
-                drawRoomClearedPopup(graphics);
             case GAME_OVER ->
                 drawGameOverScreen(graphics);
             case VICTORY ->
                 drawVictoryScreen(graphics);
             default -> {
                 // Check if we should render with tutorial darkening
-                boolean shouldDarken = combatTutorialEnabled && 
-                    tutorialState != CombatTutorialState.NOT_IN_TUTORIAL &&
-                    tutorialState != CombatTutorialState.INTRO &&
-                    tutorialState != CombatTutorialState.INTRO_AWAITING;
-                
+                boolean shouldDarken = combatTutorialEnabled
+                        && tutorialState != CombatTutorialState.NOT_IN_TUTORIAL
+                        && tutorialState != CombatTutorialState.INTRO
+                        && tutorialState != CombatTutorialState.INTRO_AWAITING;
+
                 if (shouldDarken) {
                     renderWithTutorialDarkening(graphics, size);
                 } else {
@@ -434,7 +413,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                     drawInfoPanel(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
                     drawCombatLog(graphics, 0, size.getRows() - 15, size.getColumns(), 15);
                 }
-                
+
                 // Render tutorial box if active
                 if (combatTutorialEnabled && tutorialState != CombatTutorialState.NOT_IN_TUTORIAL) {
                     renderCombatTutorialBox(graphics, size);
@@ -510,9 +489,9 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
         // Trennlinie
         TextColor primaryDarkened = new TextColor.RGB(
-            ScreenManager.PRIMARY_COLOR.getRed() / 3,
-            ScreenManager.PRIMARY_COLOR.getGreen() / 3,
-            ScreenManager.PRIMARY_COLOR.getBlue() / 3
+                ScreenManager.PRIMARY_COLOR.getRed() / 3,
+                ScreenManager.PRIMARY_COLOR.getGreen() / 3,
+                ScreenManager.PRIMARY_COLOR.getBlue() / 3
         );
         graphics.setForegroundColor(primaryDarkened);
         for (int x = 0; x < size.getColumns(); x++) {
@@ -548,9 +527,9 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
     private void drawGameAreaDarkened(TextGraphics graphics, int x, int y, int width, int height) {
         TextColor primaryDarkened = new TextColor.RGB(
-            ScreenManager.PRIMARY_COLOR.getRed() / 3,
-            ScreenManager.PRIMARY_COLOR.getGreen() / 3,
-            ScreenManager.PRIMARY_COLOR.getBlue() / 3
+                ScreenManager.PRIMARY_COLOR.getRed() / 3,
+                ScreenManager.PRIMARY_COLOR.getGreen() / 3,
+                ScreenManager.PRIMARY_COLOR.getBlue() / 3
         );
         drawBox(graphics, x, y, width - 1, height,
                 primaryDarkened, ScreenManager.BACKGROUND_COLOR);
@@ -633,9 +612,9 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         }
 
         TextColor secondaryDarkened = new TextColor.RGB(
-            ScreenManager.SECONDARY_COLOR.getRed() / 3,
-            ScreenManager.SECONDARY_COLOR.getGreen() / 3,
-            ScreenManager.SECONDARY_COLOR.getBlue() / 3
+                ScreenManager.SECONDARY_COLOR.getRed() / 3,
+                ScreenManager.SECONDARY_COLOR.getGreen() / 3,
+                ScreenManager.SECONDARY_COLOR.getBlue() / 3
         );
         graphics.setForegroundColor(secondaryDarkened);
         for (int i = 0; i < playerArt.length; i++) {
@@ -872,7 +851,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         }
 
         graphics.setForegroundColor(TextColor.ANSI.WHITE);
-        
+
         // Check if this is tutorial mode - use explicit flag for failsafe detection
         if (gameManager.isTutorialModeEnabled()) {
             drawCentered(graphics, "Tutorial abgeschlossen!", artY + 8);
@@ -987,28 +966,6 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                     gameManager.advanceToNextRoom();
                 }
             }
-            
-            case ROOM_CLEARED -> {
-                if (keyStroke.getKeyType() == KeyType.Enter) {
-                    switch (roomClearedState) {
-                        case FADING_IN ->
-                            // Skip to fully visible
-                            roomClearedState = RoomClearedState.FULLY_VISIBLE;
-                        case FULLY_VISIBLE -> {
-                            // Start fading out
-                            roomClearedState = RoomClearedState.FADING_OUT;
-                            roomClearedAnimationFrame = 0;
-                        }
-                        case FADING_OUT -> {
-                            // Popup fade-out complete - state already changed to STORY_DISPLAY by GameManager
-                            // Just clean up and reset
-                            roomClearedState = RoomClearedState.FADING_IN; // Reset for next combat
-                            messageQueue.clear(); // Now clear the queue
-                            lastScheduledDisplayTime = 0;
-                        }
-                    }
-                }
-            }
 
             case COMBAT -> {
                 // Block ALL input if tutorial is active (not just awaiting state)
@@ -1019,19 +976,19 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                     }
                     return; // Block ALL other input during tutorial
                 }
-                
+
                 // Allow map key even during combat log animation
                 if (keyStroke.getKeyType() == KeyType.Character
                         && (keyStroke.getCharacter() == 'm' || keyStroke.getCharacter() == 'M')) {
                     showMap();
                     return; // Don't process as combat input
                 }
-                
+
                 // Block combat input if log is busy
                 if (isCombatLogBusy()) {
                     return; // Wait for combat log to finish before accepting combat input
                 }
-                
+
                 // Normal combat input handling
                 handleCombatInput(keyStroke);
             }
@@ -1074,8 +1031,8 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     }
 
     /**
-     * Public method for FightManager to check if combat log is busy
-     * Used to delay combat end until log finishes
+     * Public method for FightManager to check if combat log is busy Used to
+     * delay combat end until log finishes
      */
     public boolean isCombatLogBusyForManager() {
         return isCombatLogBusy();
@@ -1190,18 +1147,18 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         // Combat input instructions
         if (inCombat) {
             int instructionY = y + 4;
-            
+
             // Show "Warte..." if combat log is busy
             if (isCombatLogBusy()) {
                 graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-                graphics.putString(new TerminalPosition(x + 2, instructionY), "Warte auf Kampf-Log...");
+                graphics.putString(new TerminalPosition(x + 2, instructionY), "Warte auf Kampf-Log");
                 // Add blinking dots
                 if (animationFrame % 30 < 15) {
-                    graphics.putString(new TerminalPosition(x + 2, instructionY + 1), "...");
+                    graphics.putString(new TerminalPosition(x + 3, instructionY), "...");
                 }
             } else {
                 graphics.setForegroundColor(TextColor.ANSI.WHITE);
-                
+
                 switch (combatInputState) {
                     case SELECTING_ENEMY -> {
                         graphics.putString(new TerminalPosition(x + 2, instructionY), "Wähle Gegner:");
@@ -1233,9 +1190,9 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
     private void drawPlayerPanelDarkened(TextGraphics graphics, int x, int y, int width, int height) {
         TextColor primaryDarkened = new TextColor.RGB(
-            ScreenManager.PRIMARY_COLOR.getRed() / 3,
-            ScreenManager.PRIMARY_COLOR.getGreen() / 3,
-            ScreenManager.PRIMARY_COLOR.getBlue() / 3
+                ScreenManager.PRIMARY_COLOR.getRed() / 3,
+                ScreenManager.PRIMARY_COLOR.getGreen() / 3,
+                ScreenManager.PRIMARY_COLOR.getBlue() / 3
         );
         drawBox(graphics, x, y, width - 1, height,
                 primaryDarkened, ScreenManager.BACKGROUND_COLOR);
@@ -1340,9 +1297,9 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
     private void drawInfoPanelDarkened(TextGraphics graphics, int x, int y, int width, int height) {
         TextColor primaryDarkened = new TextColor.RGB(
-            ScreenManager.PRIMARY_COLOR.getRed() / 3,
-            ScreenManager.PRIMARY_COLOR.getGreen() / 3,
-            ScreenManager.PRIMARY_COLOR.getBlue() / 3
+                ScreenManager.PRIMARY_COLOR.getRed() / 3,
+                ScreenManager.PRIMARY_COLOR.getGreen() / 3,
+                ScreenManager.PRIMARY_COLOR.getBlue() / 3
         );
         drawBox(graphics, x, y, width - 1, height,
                 primaryDarkened, ScreenManager.BACKGROUND_COLOR);
@@ -1429,9 +1386,9 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
     private void drawCombatLogDarkened(TextGraphics graphics, int x, int y, int width, int height) {
         TextColor secondaryDarkened = new TextColor.RGB(
-            ScreenManager.SECONDARY_COLOR.getRed() / 3,
-            ScreenManager.SECONDARY_COLOR.getGreen() / 3,
-            ScreenManager.SECONDARY_COLOR.getBlue() / 3
+                ScreenManager.SECONDARY_COLOR.getRed() / 3,
+                ScreenManager.SECONDARY_COLOR.getGreen() / 3,
+                ScreenManager.SECONDARY_COLOR.getBlue() / 3
         );
         drawBox(graphics, x, y, width, height,
                 secondaryDarkened, ScreenManager.BACKGROUND_COLOR);
@@ -1535,7 +1492,7 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             String[] tutorialMapLines = TUTORIAL_MAP_CONTENT.split("\\n");
             int startY = (size.getRows() - tutorialMapLines.length) / 2;
             int startX = (size.getColumns() - tutorialMapLines[0].length()) / 2;
-            
+
             graphics.setForegroundColor(ScreenManager.PRIMARY_COLOR);
             for (int i = 0; i < tutorialMapLines.length; i++) {
                 graphics.putString(new TerminalPosition(startX, startY + i), tutorialMapLines[i]);
@@ -1662,11 +1619,6 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         // Process queued combat messages
         processQueuedMessages();
 
-        // Update FightManager (checks for log completion and continues combat)
-        if (gameManager.getFightManager() != null) {
-            gameManager.getFightManager().update();
-        }
-
         // Update combat tutorial state
         if (combatTutorialEnabled && tutorialState != CombatTutorialState.NOT_IN_TUTORIAL) {
             updateCombatTutorial();
@@ -1680,33 +1632,6 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
                 visibleStoryLines++;
             }
         }
-        
-        // Update room cleared popup animation
-        if (currentState == UIState.ROOM_CLEARED) {
-            roomClearedAnimationFrame++;
-            
-            switch (roomClearedState) {
-                case FADING_IN -> {
-                    if (roomClearedAnimationFrame >= FADE_IN_DURATION) {
-                        // Fade-in complete, move to fully visible
-                        roomClearedState = RoomClearedState.FULLY_VISIBLE;
-                        roomClearedAnimationFrame = 0;
-                    }
-                }
-                case FADING_OUT -> {
-                    if (roomClearedAnimationFrame >= FADE_OUT_DURATION) {
-                        // Fade-out complete - state already changed to STORY_DISPLAY by GameManager
-                        // Just clean up and reset for next combat
-                        roomClearedState = RoomClearedState.FADING_IN; // Reset for next combat
-                        messageQueue.clear(); // Clear queue now
-                        lastScheduledDisplayTime = 0;
-                    }
-                }
-                case FULLY_VISIBLE -> {
-                    // Do nothing, just wait for player input
-                }
-            }
-        }
     }
 
     private void updateCombatTutorial() {
@@ -1715,64 +1640,71 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
         if (charsShown >= currentTutorialText.length()) {
             // Move to awaiting state if not already there
             switch (tutorialState) {
-                case INTRO -> tutorialState = CombatTutorialState.INTRO_AWAITING;
-                case STATUS_BAR -> tutorialState = CombatTutorialState.STATUS_BAR_AWAITING;
-                case PLAYER_PANEL -> tutorialState = CombatTutorialState.PLAYER_PANEL_AWAITING;
-                case PLAYER_PANEL_PART2 -> tutorialState = CombatTutorialState.PLAYER_PANEL_PART2_AWAITING;
-                case COMBAT_ANIMATION -> tutorialState = CombatTutorialState.COMBAT_ANIMATION_AWAITING;
-                case INFO_PANEL -> tutorialState = CombatTutorialState.INFO_PANEL_AWAITING;
-                case COMBAT_LOG -> tutorialState = CombatTutorialState.COMBAT_LOG_AWAITING;
+                case INTRO ->
+                    tutorialState = CombatTutorialState.INTRO_AWAITING;
+                case STATUS_BAR ->
+                    tutorialState = CombatTutorialState.STATUS_BAR_AWAITING;
+                case PLAYER_PANEL ->
+                    tutorialState = CombatTutorialState.PLAYER_PANEL_AWAITING;
+                case PLAYER_PANEL_PART2 ->
+                    tutorialState = CombatTutorialState.PLAYER_PANEL_PART2_AWAITING;
+                case COMBAT_ANIMATION ->
+                    tutorialState = CombatTutorialState.COMBAT_ANIMATION_AWAITING;
+                case INFO_PANEL ->
+                    tutorialState = CombatTutorialState.INFO_PANEL_AWAITING;
+                case COMBAT_LOG ->
+                    tutorialState = CombatTutorialState.COMBAT_LOG_AWAITING;
             }
         }
     }
 
     private boolean isInTutorialAwaitingState() {
-        return tutorialState == CombatTutorialState.INTRO_AWAITING ||
-               tutorialState == CombatTutorialState.STATUS_BAR_AWAITING ||
-               tutorialState == CombatTutorialState.PLAYER_PANEL_AWAITING ||
-               tutorialState == CombatTutorialState.PLAYER_PANEL_PART2_AWAITING ||
-               tutorialState == CombatTutorialState.COMBAT_ANIMATION_AWAITING ||
-               tutorialState == CombatTutorialState.INFO_PANEL_AWAITING ||
-               tutorialState == CombatTutorialState.COMBAT_LOG_AWAITING;
+        return tutorialState == CombatTutorialState.INTRO_AWAITING
+                || tutorialState == CombatTutorialState.STATUS_BAR_AWAITING
+                || tutorialState == CombatTutorialState.PLAYER_PANEL_AWAITING
+                || tutorialState == CombatTutorialState.PLAYER_PANEL_PART2_AWAITING
+                || tutorialState == CombatTutorialState.COMBAT_ANIMATION_AWAITING
+                || tutorialState == CombatTutorialState.INFO_PANEL_AWAITING
+                || tutorialState == CombatTutorialState.COMBAT_LOG_AWAITING;
     }
 
     private void renderWithTutorialDarkening(TextGraphics graphics, TerminalSize size) {
         int mainAreaY = 3;
         int columnWidth = size.getColumns() / 3;
-        
+
         // Determine which section to keep bright
         boolean darkenStatusBar = !isStatusBarSection();
         boolean darkenPlayerPanel = !isPlayerPanelSection();
         boolean darkenGameArea = !isGameAreaSection();
         boolean darkenInfoPanel = !isInfoPanelSection();
         boolean darkenCombatLog = !isCombatLogSection();
-        
+
         // Draw status bar (darkened or normal)
         if (darkenStatusBar) {
             drawStatusBarDarkened(graphics);
         } else {
             drawStatusBar(graphics);
         }
-        
+
         // Draw sections with selective darkening
         if (darkenPlayerPanel) {
             drawPlayerPanelDarkened(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
         } else {
             drawPlayerPanel(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
         }
-        
+
         if (darkenGameArea) {
             drawGameAreaDarkened(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
         } else {
             drawGameArea(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
         }
-        
+
         if (darkenInfoPanel) {
             drawInfoPanelDarkened(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
         } else {
             drawInfoPanel(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
         }
-        
+
         if (darkenCombatLog) {
             drawCombatLogDarkened(graphics, 0, size.getRows() - 15, size.getColumns(), 15);
         } else {
@@ -1781,35 +1713,35 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
     }
 
     private boolean isStatusBarSection() {
-        return tutorialState == CombatTutorialState.STATUS_BAR ||
-               tutorialState == CombatTutorialState.STATUS_BAR_AWAITING;
+        return tutorialState == CombatTutorialState.STATUS_BAR
+                || tutorialState == CombatTutorialState.STATUS_BAR_AWAITING;
     }
 
     private boolean isPlayerPanelSection() {
-        return tutorialState == CombatTutorialState.PLAYER_PANEL ||
-               tutorialState == CombatTutorialState.PLAYER_PANEL_AWAITING ||
-               tutorialState == CombatTutorialState.PLAYER_PANEL_PART2 ||
-               tutorialState == CombatTutorialState.PLAYER_PANEL_PART2_AWAITING;
+        return tutorialState == CombatTutorialState.PLAYER_PANEL
+                || tutorialState == CombatTutorialState.PLAYER_PANEL_AWAITING
+                || tutorialState == CombatTutorialState.PLAYER_PANEL_PART2
+                || tutorialState == CombatTutorialState.PLAYER_PANEL_PART2_AWAITING;
     }
 
     private boolean isGameAreaSection() {
-        return tutorialState == CombatTutorialState.COMBAT_ANIMATION ||
-               tutorialState == CombatTutorialState.COMBAT_ANIMATION_AWAITING;
+        return tutorialState == CombatTutorialState.COMBAT_ANIMATION
+                || tutorialState == CombatTutorialState.COMBAT_ANIMATION_AWAITING;
     }
 
     private boolean isInfoPanelSection() {
-        return tutorialState == CombatTutorialState.INFO_PANEL ||
-               tutorialState == CombatTutorialState.INFO_PANEL_AWAITING;
+        return tutorialState == CombatTutorialState.INFO_PANEL
+                || tutorialState == CombatTutorialState.INFO_PANEL_AWAITING;
     }
 
     private boolean isCombatLogSection() {
-        return tutorialState == CombatTutorialState.COMBAT_LOG ||
-               tutorialState == CombatTutorialState.COMBAT_LOG_AWAITING;
+        return tutorialState == CombatTutorialState.COMBAT_LOG
+                || tutorialState == CombatTutorialState.COMBAT_LOG_AWAITING;
     }
 
     private void progressCombatTutorial() {
         tutorialStartFrame = animationFrame;
-        
+
         switch (tutorialState) {
             case INTRO_AWAITING -> {
                 tutorialState = CombatTutorialState.STATUS_BAR;
@@ -1845,17 +1777,17 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
 
     private void renderCombatTutorialBox(TextGraphics graphics, TerminalSize size) {
         boolean isAwaitingConfirmation = isInTutorialAwaitingState();
-        
+
         // Special positioning for combat log section
         if (isCombatLogSection()) {
             // Position box ABOVE combat log instead of at bottom
             int customY = size.getRows() - 20; // Adjust as needed
             TutorialBoxRenderer.renderTutorialBox(graphics, size, currentTutorialText,
-                animationFrame, tutorialStartFrame, isAwaitingConfirmation, false, customY);
+                    animationFrame, tutorialStartFrame, isAwaitingConfirmation, false, customY);
         } else {
             // Default bottom position
             TutorialBoxRenderer.renderTutorialBox(graphics, size, currentTutorialText,
-                animationFrame, tutorialStartFrame, isAwaitingConfirmation, false);
+                    animationFrame, tutorialStartFrame, isAwaitingConfirmation, false);
         }
     }
 
@@ -1995,97 +1927,6 @@ public class GameplayScreen extends GameScreen implements GameManager.GameEventL
             int dots = (animationFrame / 10) % 4;
             String dotString = ".".repeat(dots) + " ".repeat(3 - dots);
             graphics.putString(new TerminalPosition(promptX + promptText.length() + 3, promptY + 1), dotString);
-        }
-    }
-    
-    private void drawRoomClearedPopup(TextGraphics graphics) {
-        TerminalSize size = screenManager.getSize();
-        
-        // Calculate fade progress (0.0 to 1.0)
-        float fadeProgress = 0.0f;
-        switch (roomClearedState) {
-            case FADING_IN ->
-                fadeProgress = Math.min(1.0f, roomClearedAnimationFrame / (float) FADE_IN_DURATION);
-            case FULLY_VISIBLE ->
-                fadeProgress = 1.0f;
-            case FADING_OUT ->
-                fadeProgress = Math.max(0.0f, 1.0f - (roomClearedAnimationFrame / (float) FADE_OUT_DURATION));
-        }
-        
-        // First, draw the darkened combat screen background
-        int mainAreaY = 3;
-        int columnWidth = size.getColumns() / 3;
-        
-        // Draw all panels darkened
-        drawPlayerPanelDarkened(graphics, 0, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
-        drawGameAreaDarkened(graphics, columnWidth, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
-        drawInfoPanelDarkened(graphics, columnWidth * 2, mainAreaY, columnWidth, size.getRows() - mainAreaY - 15);
-        drawCombatLogDarkened(graphics, 0, size.getRows() - 15, size.getColumns(), 15);
-        
-        // Draw popup box
-        int boxWidth = 50;
-        int boxHeight = 10;
-        int boxX = (size.getColumns() - boxWidth) / 2;
-        int boxY = (size.getRows() - boxHeight) / 2;
-        
-        // Calculate color brightness based on fade
-        int brightness = (int) (255 * fadeProgress);
-        int bgBrightness = (int) (40 * fadeProgress);
-        TextColor borderColor = new TextColor.RGB(brightness, (int)(brightness * 0.8), 0); // Gold color
-        TextColor textColor = new TextColor.RGB(brightness, brightness, brightness);
-        TextColor bgColor = new TextColor.RGB(bgBrightness, bgBrightness, bgBrightness);
-        
-        // Draw box background
-        graphics.setBackgroundColor(bgColor);
-        for (int y = boxY; y < boxY + boxHeight; y++) {
-            for (int x = boxX; x < boxX + boxWidth; x++) {
-                graphics.setCharacter(x, y, ' ');
-            }
-        }
-        
-        // Draw box border
-        graphics.setForegroundColor(borderColor);
-        // Top and bottom
-        for (int x = boxX; x < boxX + boxWidth; x++) {
-            graphics.setCharacter(x, boxY, '═');
-            graphics.setCharacter(x, boxY + boxHeight - 1, '═');
-        }
-        // Sides
-        for (int y = boxY; y < boxY + boxHeight; y++) {
-            graphics.setCharacter(boxX, y, '║');
-            graphics.setCharacter(boxX + boxWidth - 1, y, '║');
-        }
-        // Corners
-        graphics.setCharacter(boxX, boxY, '╔');
-        graphics.setCharacter(boxX + boxWidth - 1, boxY, '╗');
-        graphics.setCharacter(boxX, boxY + boxHeight - 1, '╚');
-        graphics.setCharacter(boxX + boxWidth - 1, boxY + boxHeight - 1, '╝');
-        
-        // Draw decorative elements on border
-        for (int i = 5; i < boxWidth - 5; i += 5) {
-            graphics.setCharacter(boxX + i, boxY, '◈');
-            graphics.setCharacter(boxX + i, boxY + boxHeight - 1, '◈');
-        }
-        
-        // Draw title text "RAUM BEREINIGT!"
-        graphics.setForegroundColor(textColor);
-        String title = "RAUM BEREINIGT!";
-        int titleX = boxX + (boxWidth - title.length()) / 2;
-        graphics.putString(new TerminalPosition(titleX, boxY + 3), title);
-        
-        // Draw prompt text if fully visible
-        if (roomClearedState == RoomClearedState.FULLY_VISIBLE) {
-            String prompt = "Drücke ENTER um fortzufahren";
-            int promptX = boxX + (boxWidth - prompt.length()) / 2;
-            
-            // Blinking arrow
-            if (animationFrame % 30 < 15) {
-                graphics.setForegroundColor(borderColor);
-                graphics.putString(new TerminalPosition(promptX - 2, boxY + 6), "►");
-            }
-            
-            graphics.setForegroundColor(textColor);
-            graphics.putString(new TerminalPosition(promptX, boxY + 6), prompt);
         }
     }
 }

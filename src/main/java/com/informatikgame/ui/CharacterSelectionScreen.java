@@ -193,7 +193,6 @@ public class CharacterSelectionScreen extends GameScreen {
             }
         }
 
-
         // Footer mit Steuerungshinweisen
         graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
         graphics.setForegroundColor(TextColor.ANSI.YELLOW);
@@ -219,9 +218,9 @@ public class CharacterSelectionScreen extends GameScreen {
 
         // Modal interaction has priority
         if (showStatsModal) {
-            if (keyStroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Enter ||
-                keyStroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Escape ||
-                keyStroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
+            if (keyStroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Enter
+                    || keyStroke.getKeyType() == com.googlecode.lanterna.input.KeyType.Escape
+                    || keyStroke.getKeyType() == com.googlecode.lanterna.input.KeyType.ArrowLeft) {
                 showStatsModal = false;
             }
             return;
@@ -294,7 +293,7 @@ public class CharacterSelectionScreen extends GameScreen {
 
         // Advance tutorial state when typewriter finished
         if (tutorialState == TutorialState.EXPLAINING_SELECTION || tutorialState == TutorialState.EXPLAINING_STATS) {
-            int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 3; // ~30 cps (faster)
+            int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 4; // ~40 cps
             if (tutorialText != null && charsShown >= tutorialText.length()) {
                 tutorialState = TutorialState.AWAITING_CONFIRMATION;
             }
@@ -310,9 +309,12 @@ public class CharacterSelectionScreen extends GameScreen {
     // ===== Helper UI methods =====
     private PlayerType getSelectedPlayerType() {
         return switch (selectedOption) {
-            case 0 -> PlayerType.SWORD_FIGHTER;
-            case 1 -> PlayerType.SHIELD_FIGHTER;
-            default -> PlayerType.SWORD_FIGHTER;
+            case 0 ->
+                PlayerType.SWORD_FIGHTER;
+            case 1 ->
+                PlayerType.SHIELD_FIGHTER;
+            default ->
+                PlayerType.SWORD_FIGHTER;
         };
     }
 
@@ -343,7 +345,7 @@ public class CharacterSelectionScreen extends GameScreen {
 
     private void drawTutorialBox(TextGraphics graphics, TerminalSize size) {
         // Typewriter effect calculation
-        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 3; // ~30 cps (faster)
+        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 4; // ~40 cps
         charsShown = Math.min(charsShown, tutorialText.length());
         String textToShow = tutorialText.substring(0, charsShown);
 
@@ -362,7 +364,9 @@ public class CharacterSelectionScreen extends GameScreen {
                     line = new StringBuilder();
                 }
             }
-            if (line.length() > 0) line.append(' ');
+            if (line.length() > 0) {
+                line.append(' ');
+            }
             line.append(w);
         }
         if (line.length() > 0) {
@@ -405,7 +409,7 @@ public class CharacterSelectionScreen extends GameScreen {
 
     private void drawDarkenedTutorialBox(TextGraphics graphics, TerminalSize size) {
         // Similar to drawTutorialBox but with darkened colors
-        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 3;
+        int charsShown = Math.max(0, (animationFrame - tutorialStartFrame)) * 4;
         charsShown = Math.min(charsShown, tutorialText.length());
         String textToShow = tutorialText.substring(0, charsShown);
 
@@ -422,7 +426,9 @@ public class CharacterSelectionScreen extends GameScreen {
                     line = new StringBuilder();
                 }
             }
-            if (line.length() > 0) line.append(' ');
+            if (line.length() > 0) {
+                line.append(' ');
+            }
             line.append(w);
         }
         if (line.length() > 0) {
@@ -514,9 +520,9 @@ public class CharacterSelectionScreen extends GameScreen {
             TextColor.RGB originalColor = (TextColor.RGB) p.color;
             int darkenFactor = 3; // Divide RGB values by this factor
             graphics.setForegroundColor(new TextColor.RGB(
-                originalColor.getRed() / darkenFactor,
-                originalColor.getGreen() / darkenFactor,
-                originalColor.getBlue() / darkenFactor
+                    originalColor.getRed() / darkenFactor,
+                    originalColor.getGreen() / darkenFactor,
+                    originalColor.getBlue() / darkenFactor
             ));
             graphics.setCharacter(p.x, p.y, p.symbol);
         }

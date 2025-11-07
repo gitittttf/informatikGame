@@ -353,14 +353,14 @@ public class GameManager implements FightManager.CombatEventListener {
 
     private void victory() {
         gameRunning = false;
-        
+
         // Check if this is tutorial mode - use explicit flag for failsafe detection
         if (tutorialModeEnabled) {
-            notifyLog("✅ TUTORIAL ABGESCHLOSSEN! Gehe zurück zum Hauptmenü um das echte Spiel zu starten.");
+            notifyLog("TUTORIAL ABGESCHLOSSEN! Gehe zurück zum Hauptmenü um das echte Spiel zu starten.");
         } else {
             notifyLog("SIEG! Du hast alle Räume gemeistert!");
         }
-        
+
         if (eventListener != null) {
             eventListener.onVictory();
         }
@@ -398,19 +398,29 @@ public class GameManager implements FightManager.CombatEventListener {
     public String getCurrentRoomName() {
         Room currentRoom = world.getCurrent_room();
         String roomName = currentRoom.getRoomName();
-        
+
         // Map room names to display names
         return switch (roomName) {
-            case "TUTORIAL_ROOM" -> "Tutorial-Raum";
-            case "INTRO_ROOM" -> "Eingangsbereich";
-            case "FLOOR_ROOM" -> "Verlassener Flur";
-            case "PANTRY_1" -> "Speisekammer";
-            case "LIBRARY_ROOM" -> "Alte Bibliothek";
-            case "DINING_HALL" -> "Speisesaal";
-            case "LABORATORY" -> "Laboratorium";
-            case "CORRIDOR" -> "Dunkler Korridor";
-            case "FINAL_ROOM" -> "Boss-Kammer";
-            default -> "Unbekannter Raum";
+            case "TUTORIAL_ROOM" ->
+                "Tutorial-Raum";
+            case "INTRO_ROOM" ->
+                "Eingangsbereich";
+            case "FLOOR_ROOM" ->
+                "Verlassener Flur";
+            case "PANTRY_1" ->
+                "Speisekammer";
+            case "LIBRARY_ROOM" ->
+                "Alte Bibliothek";
+            case "DINING_HALL" ->
+                "Speisesaal";
+            case "LABORATORY" ->
+                "Laboratorium";
+            case "CORRIDOR" ->
+                "Dunkler Korridor";
+            case "FINAL_ROOM" ->
+                "Boss-Kammer";
+            default ->
+                "Unbekannter Raum";
         };
     }
 
@@ -439,19 +449,29 @@ public class GameManager implements FightManager.CombatEventListener {
     public String getRoomStory() {
         Room currentRoom = world.getCurrent_room();
         String roomName = currentRoom.getRoomName();
-        
+
         // Map room names to story entries
         return switch (roomName) {
-            case "TUTORIAL_ROOM" -> StoryDatabank.getStory(StoryDatabank.TUTORIAL_ROOM);
-            case "INTRO_ROOM" -> StoryDatabank.getStory(StoryDatabank.INTRO_ROOM);
-            case "FLOOR_ROOM" -> StoryDatabank.getStory(StoryDatabank.FLOOR_ROOM);
-            case "PANTRY_1" -> StoryDatabank.getStory(StoryDatabank.PANTRY_1);
-            case "LIBRARY_ROOM" -> StoryDatabank.getStory(StoryDatabank.LIBRARY_ROOM);
-            case "DINING_HALL" -> StoryDatabank.getStory(StoryDatabank.DINING_HALL);
-            case "LABORATORY" -> StoryDatabank.getStory(StoryDatabank.LABORATORY);
-            case "CORRIDOR" -> StoryDatabank.getStory(StoryDatabank.CORRIDOR);
-            case "FINAL_ROOM" -> StoryDatabank.getStory(StoryDatabank.FINAL_ROOM);
-            default -> "Ein unbekannter Raum...";
+            case "TUTORIAL_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.TUTORIAL_ROOM);
+            case "INTRO_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.INTRO_ROOM);
+            case "FLOOR_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.FLOOR_ROOM);
+            case "PANTRY_1" ->
+                StoryDatabank.getStory(StoryDatabank.PANTRY_1);
+            case "LIBRARY_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.LIBRARY_ROOM);
+            case "DINING_HALL" ->
+                StoryDatabank.getStory(StoryDatabank.DINING_HALL);
+            case "LABORATORY" ->
+                StoryDatabank.getStory(StoryDatabank.LABORATORY);
+            case "CORRIDOR" ->
+                StoryDatabank.getStory(StoryDatabank.CORRIDOR);
+            case "FINAL_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.FINAL_ROOM);
+            default ->
+                "Ein unbekannter Raum...";
         };
     }
 
@@ -461,19 +481,29 @@ public class GameManager implements FightManager.CombatEventListener {
     public String getExitStory() {
         Room currentRoom = world.getCurrent_room();
         String roomName = currentRoom.getRoomName();
-        
+
         // Map room names to exit story entries
         return switch (roomName) {
-            case "TUTORIAL_ROOM" -> StoryDatabank.getStory(StoryDatabank.TUTORIAL_ROOM_END);
-            case "INTRO_ROOM" -> StoryDatabank.getStory(StoryDatabank.INTRO_ROOM_END);
-            case "FLOOR_ROOM" -> StoryDatabank.getStory(StoryDatabank.FLOOR_ROOM_END);
-            case "PANTRY_1" -> StoryDatabank.getStory(StoryDatabank.PANTRY_1_END);
-            case "LIBRARY_ROOM" -> StoryDatabank.getStory(StoryDatabank.LIBRARY_ROOM_END);
-            case "DINING_HALL" -> StoryDatabank.getStory(StoryDatabank.DINING_HALL_END);
-            case "LABORATORY" -> StoryDatabank.getStory(StoryDatabank.LABORATORY_END);
-            case "CORRIDOR" -> StoryDatabank.getStory(StoryDatabank.CORRIDOR_END);
-            case "FINAL_ROOM" -> StoryDatabank.getStory(StoryDatabank.FINAL_ROOM_END);
-            default -> "";
+            case "TUTORIAL_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.TUTORIAL_ROOM_END);
+            case "INTRO_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.INTRO_ROOM_END);
+            case "FLOOR_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.FLOOR_ROOM_END);
+            case "PANTRY_1" ->
+                StoryDatabank.getStory(StoryDatabank.PANTRY_1_END);
+            case "LIBRARY_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.LIBRARY_ROOM_END);
+            case "DINING_HALL" ->
+                StoryDatabank.getStory(StoryDatabank.DINING_HALL_END);
+            case "LABORATORY" ->
+                StoryDatabank.getStory(StoryDatabank.LABORATORY_END);
+            case "CORRIDOR" ->
+                StoryDatabank.getStory(StoryDatabank.CORRIDOR_END);
+            case "FINAL_ROOM" ->
+                StoryDatabank.getStory(StoryDatabank.FINAL_ROOM_END);
+            default ->
+                "";
         };
     }
 
