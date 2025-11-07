@@ -40,11 +40,10 @@ public class Main {
             CharacterSelectionScreen characterSelectionScreen = new CharacterSelectionScreen();
             characterSelectionScreen.setGameManager(gameManager);
             screenManager.registerScreen("characterSelection", characterSelectionScreen);
-            // screenManager.registerScreen("help", new HelpScreen());
             // screenManager.registerScreen("credits", new CreditsScreen());
 
             // Mit Hauptmenü starten
-            screenManager.switchToScreen("menu");
+            screenManager.switchToScreen("tutorialChoice");
 
             // Game-Loop starten
             screenManager.run();

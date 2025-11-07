@@ -152,7 +152,7 @@ public class MainMenuScreen extends GameScreen {
         // Footer mit Steuerungshinweisen
         graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
         graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-        String controls = "↑↓ Navigation | ENTER Auswählen | ESC Zurück";
+        String controls = "↑↓ Navigation | ENTER Auswählen | ESC Spiel Beenden";
         drawCentered(graphics, controls, size.getRows() - 2);
     }
 
@@ -197,6 +197,6 @@ public class MainMenuScreen extends GameScreen {
     @Override
     public boolean onEscape() {
         // Im Hauptmenü: ESC beendet das Spiel
-        return selectedOption == 2; // Nur wenn "Beenden" ausgewählt
+        return true;
     }
 }

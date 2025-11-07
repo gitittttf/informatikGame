@@ -122,14 +122,6 @@ public class CharacterSelectionScreen extends GameScreen {
             graphics.setForegroundColor(p.color);
             graphics.setCharacter(p.x, p.y, p.symbol);
         }
-        // Zusätzlicher, dezenter Scanline-Effekt
-        int scanY = (animationFrame % Math.max(1, size.getRows()));
-        graphics.setForegroundColor(TextColor.ANSI.BLACK_BRIGHT);
-        for (int x = 0; x < size.getColumns(); x++) {
-            if (x % 2 == 0) {
-                graphics.setCharacter(x, scanY, '·');
-            }
-        }
 
         // Titel mit Glitch-Effekt
         int titleY = 5;
