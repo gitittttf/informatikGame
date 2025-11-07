@@ -43,7 +43,7 @@ public class Main {
             // screenManager.registerScreen("credits", new CreditsScreen());
 
             // Mit Hauptmenü starten
-            screenManager.switchToScreen("tutorialChoice");
+            screenManager.switchToScreen("menu");
 
             // Game-Loop starten
             screenManager.run();

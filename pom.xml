@@ -37,6 +37,14 @@
         </dependency>
     </dependencies>
 
+    <distributionManagement>
+    <repository>
+        <id>github</id>
+        <name>GitHub gitittttf Apache Maven Packages</name>
+        <url>https://maven.pkg.github.com/gitittttf/informatikGame</url>
+    </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
             <!-- Compiler Plugin -->
