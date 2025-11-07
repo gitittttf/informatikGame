@@ -519,15 +519,6 @@ public class CharacterSelectionScreen extends GameScreen {
             graphics.setCharacter(p.x, p.y, p.symbol);
         }
 
-        // Darken the scanline effect
-        int scanY = (animationFrame % Math.max(1, size.getRows()));
-        graphics.setForegroundColor(new TextColor.RGB(20, 20, 20)); // Very dark gray
-        for (int x = 0; x < size.getColumns(); x++) {
-            if (x % 2 == 0) {
-                graphics.setCharacter(x, scanY, '·');
-            }
-        }
-
         // Darken the title
         int titleY = 5;
         for (int i = 0; i < titleArt.length; i++) {
