@@ -1,6 +1,10 @@
 package com.informatikgame.world;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
@@ -8,40 +12,51 @@ import org.junit.jupiter.api.Test;
 public class RoomTypeTest {
 
     @Test
-    public void testAllRoomTypesExist() {
-        assertNotNull(RoomType.ZOMBIE_ROOM);
-        assertNotNull(RoomType.INTRO_ROOM);
-        assertNotNull(RoomType.LIBRARY_ROOM);
-        assertNotNull(RoomType.DINING_HALL);
-        assertNotNull(RoomType.LABORATORY);
-        assertNotNull(RoomType.CORRIDOR);
-        assertNotNull(RoomType.PANTRY_1);
-        assertNotNull(RoomType.FINAL_ROOM);
+    public void reihenfolgeDerRaeume() {
+        RoomType[] raeume = RoomType.values();
+        assertEquals(8, raeume.length);
+        assertEquals(RoomType.INTRO_ROOM, raeume[0]);
+        assertEquals(RoomType.PANTRY_1, raeume[2]);
+        assertEquals(RoomType.FINAL_ROOM, raeume[raeume.length - 1]);
     }
 
     @Test
-    public void testRoomEnemyComposition() {
-        // format: assertEquals(erwarteterWert, tatsächlicherWert)
-        // man kann auch andere räume prüfen mit dem format
-        assertEquals(2, RoomType.ZOMBIE_ROOM.enemiesInRoom.length);
-        assertEquals(EnemyType.MINI_ZOMBIE, RoomType.ZOMBIE_ROOM.enemiesInRoom[0]);
-        assertEquals(EnemyType.MINI_ZOMBIE, RoomType.ZOMBIE_ROOM.enemiesInRoom[1]);
-
-        assertEquals(1, RoomType.INTRO_ROOM.enemiesInRoom.length);
-        assertEquals(EnemyType.MINI_ZOMBIE, RoomType.INTRO_ROOM.enemiesInRoom[0]);
-
-        assertEquals(1, RoomType.FINAL_ROOM.enemiesInRoom.length);
-        assertEquals(EnemyType.ENDBOSS, RoomType.FINAL_ROOM.enemiesInRoom[0]);
+    public void jederRaumHatAllesDabei() {
+        Set<String> namen = new HashSet<>();
+        for (RoomType raum : RoomType.values()) {
+            assertNotNull(raum.story, raum.name());
+            assertNotNull(raum.endStory, raum.name());
+            assertFalse(raum.anzeigeName.isBlank());
+            assertTrue(raum.getBild().length > 0);
+            assertTrue(raum.getEnemiesInRoom().length > 0, raum + " hat keine gegner");
+            assertTrue(namen.add(raum.anzeigeName), "name doppelt: " + raum.anzeigeName);
+        }
     }
 
     @Test
-    public void testRoomDifficultyProgression() {
-        // testen ob räume schwieriger werden
-        // z.b.:
-        assertTrue(RoomType.INTRO_ROOM.enemiesInRoom.length
-                <= RoomType.LIBRARY_ROOM.enemiesInRoom.length);
+    public void nameUndStoryPassenZusammen() {
+        // früher hatte raum 3 den namen "Bibliothek" aber die story von der speisekammer
+        assertEquals("Speisekammer", RoomType.PANTRY_1.anzeigeName);
+        assertEquals(StoryDatabank.PANTRY_1, RoomType.PANTRY_1.story);
+        assertEquals(StoryDatabank.LIBRARY_ROOM, RoomType.LIBRARY_ROOM.story);
+    }
 
-        // Final room sollte endboss haben
-        assertEquals(EnemyType.ENDBOSS, RoomType.FINAL_ROOM.enemiesInRoom[0]);
+    @Test
+    public void endbossImLetztenRaum() {
+        assertEquals(1, RoomType.FINAL_ROOM.getEnemiesInRoom().length);
+        assertEquals(EnemyType.ENDBOSS, RoomType.FINAL_ROOM.getEnemiesInRoom()[0]);
+    }
+
+    @Test
+    public void gegnerListeKannNichtVeraendertWerden() {
+        RoomType.INTRO_ROOM.getEnemiesInRoom()[0] = EnemyType.ENDBOSS;
+        assertEquals(EnemyType.MINI_ZOMBIE, RoomType.INTRO_ROOM.getEnemiesInRoom()[0]);
+    }
+
+    @Test
+    public void jederRaumIstAufDerKarte() {
+        for (RoomType raum : RoomType.values()) {
+            assertTrue(raum.kartenLabel.startsWith("[") && raum.kartenLabel.endsWith("]"));
+        }
     }
 }
