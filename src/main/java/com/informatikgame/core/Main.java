@@ -3,10 +3,11 @@ package com.informatikgame.core;
 import java.io.IOException;
 
 import com.informatikgame.ui.CharacterSelectionScreen;
-import com.informatikgame.ui.GameplayScreen;
 import com.informatikgame.ui.MainMenuScreen;
 import com.informatikgame.ui.ScreenManager;
+import com.informatikgame.ui.SchwierigkeitScreen;
 import com.informatikgame.ui.SettingsScreen;
+import com.informatikgame.ui.gameplay.GameplayScreen;
 
 public class Main {
 
@@ -19,23 +20,23 @@ public class Main {
             // Terminal initialisieren (mit Vollbild und schwarzem Hintergrund)
             screenManager.initialize();
 
-            // GameManager erstellen
             GameManager gameManager = new GameManager();
 
             // Alle Screens registrieren
             screenManager.registerScreen("menu", new MainMenuScreen());
+            screenManager.registerScreen("settings", new SettingsScreen());
 
             GameplayScreen gameplayScreen = new GameplayScreen();
             gameplayScreen.setGameManager(gameManager);
             screenManager.registerScreen("game", gameplayScreen);
 
-            screenManager.registerScreen("settings", new SettingsScreen());
+            SchwierigkeitScreen schwierigkeitScreen = new SchwierigkeitScreen();
+            schwierigkeitScreen.setGameManager(gameManager);
+            screenManager.registerScreen("schwierigkeit", schwierigkeitScreen);
 
             CharacterSelectionScreen characterSelectionScreen = new CharacterSelectionScreen();
-            characterSelectionScreen.setGameManager(gameManager);
+            characterSelectionScreen.setSchwierigkeitScreen(schwierigkeitScreen);
             screenManager.registerScreen("characterSelection", characterSelectionScreen);
-            // screenManager.registerScreen("help", new HelpScreen());
-            // screenManager.registerScreen("credits", new CreditsScreen());
 
             // Mit Hauptmenü starten
             screenManager.switchToScreen("menu");

@@ -338,10 +338,7 @@ public class SettingsScreen extends GameScreen {
     private void executeSelectedOption() {
         int maxOption = (pendingDisplayMode == ScreenManager.DisplayMode.FULLSCREEN) ? 3 : 1;
 
-        if (selectedOption == maxOption) { // Back option
-            if (hasChanges) {
-                // TODO: Could add confirmation dialog here
-            }
+        if (selectedOption == maxOption) { // Zurück, nicht angewendete änderungen verfallen
             screenManager.switchToScreen("menu");
         }
     }

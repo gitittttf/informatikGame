@@ -1,7 +1,5 @@
 package com.informatikgame.ui;
 
-import com.googlecode.lanterna.TerminalPosition;
-import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
@@ -30,7 +28,7 @@ public abstract class GameScreen {
     public abstract void render(TextGraphics graphics);
 
     /**
-     * Verarbeitet Eingaben
+     * Verarbeitet Eingaben (ESC kommt über onEscape)
      */
     public abstract void handleInput(KeyStroke keyStroke);
 
@@ -58,9 +56,7 @@ public abstract class GameScreen {
      * Hilfsmethode: Zeichnet Text zentriert
      */
     protected void drawCentered(TextGraphics graphics, String text, int y) {
-        TerminalSize size = screenManager.getSize();
-        int x = (size.getColumns() - text.length()) / 2;
-        graphics.putString(new TerminalPosition(x, y), text);
+        Zeichnen.zentriert(graphics, screenManager.getSize(), text, y);
     }
 
     /**
@@ -68,53 +64,29 @@ public abstract class GameScreen {
      */
     protected void drawBox(TextGraphics graphics, int x, int y, int width, int height,
             TextColor borderColor, TextColor fillColor) {
-        graphics.setForegroundColor(borderColor);
-        graphics.setBackgroundColor(fillColor);
-
-        // Ecken
-        graphics.setCharacter(x, y, '╔');
-        graphics.setCharacter(x + width - 1, y, '╗');
-        graphics.setCharacter(x, y + height - 1, '╚');
-        graphics.setCharacter(x + width - 1, y + height - 1, '╝');
-
-        // Horizontale Linien
-        for (int i = x + 1; i < x + width - 1; i++) {
-            graphics.setCharacter(i, y, '═');
-            graphics.setCharacter(i, y + height - 1, '═');
-        }
-
-        // Vertikale Linien
-        for (int i = y + 1; i < y + height - 1; i++) {
-            graphics.setCharacter(x, i, '║');
-            graphics.setCharacter(x + width - 1, i, '║');
-        }
-
-        // Innenraum füllen
-        graphics.setBackgroundColor(fillColor);
-        for (int i = y + 1; i < y + height - 1; i++) {
-            for (int j = x + 1; j < x + width - 1; j++) {
-                graphics.setCharacter(j, i, ' ');
-            }
-        }
+        Zeichnen.box(graphics, x, y, width, height, borderColor, fillColor);
     }
 
     /**
-     * Zeichnet animierten Text (pulsierend)
+     * Hilfsmethode: J/N Dialog
      */
-    protected void drawAnimatedText(TextGraphics graphics, String text, int x, int y,
-            TextColor baseColor) {
-        // Pulsierender Effekt basierend auf animationFrame
-        int brightness = 100 + (int) (Math.sin(animationFrame * 0.3) * 100);
-        brightness = Math.max(50, Math.min(255, brightness));
+    protected void drawDialog(TextGraphics graphics, String frage) {
+        Zeichnen.dialog(graphics, screenManager.getSize(), frage);
+    }
 
-        if (baseColor == TextColor.ANSI.GREEN) {
-            graphics.setForegroundColor(new TextColor.RGB(0, brightness, 0));
-        } else if (baseColor == TextColor.ANSI.RED) {
-            graphics.setForegroundColor(new TextColor.RGB(brightness, 0, 0));
-        } else {
-            graphics.setForegroundColor(new TextColor.RGB(brightness, brightness, brightness));
-        }
+    /**
+     * true wenn die Taste J (ja) war
+     */
+    protected static boolean istJa(KeyStroke keyStroke) {
+        Character c = keyStroke.getCharacter();
+        return c != null && (c == 'j' || c == 'J' || c == 'y' || c == 'Y');
+    }
 
-        graphics.putString(new TerminalPosition(x, y), text);
+    /**
+     * true wenn die Taste N (nein) war
+     */
+    protected static boolean istNein(KeyStroke keyStroke) {
+        Character c = keyStroke.getCharacter();
+        return c != null && (c == 'n' || c == 'N');
     }
 }

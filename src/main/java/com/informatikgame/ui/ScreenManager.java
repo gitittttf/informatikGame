@@ -18,9 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
@@ -51,7 +49,6 @@ public class ScreenManager {
     private TextGraphics graphics;
     private boolean running;
     private SwingTerminalFrame swingFrame;
-    private int currentFontSize = 16;
 
     // Display mode settings
     public enum DisplayMode {
@@ -75,7 +72,6 @@ public class ScreenManager {
     private DisplayMode currentDisplayMode = DisplayMode.FULLSCREEN;
     private ScalingMode currentScalingMode = ScalingMode.NORMAL;
     private String selectedDisplayId = null; // null = default display
-    private JFrame customFrame;
 
     // Display information class
     public static class DisplayInfo {
@@ -100,13 +96,10 @@ public class ScreenManager {
         }
     }
 
-    // Simple dynamic scaling
-    private final AtomicBoolean isRecreating = new AtomicBoolean(false);
-    private final int TARGET_COLUMNS = 120;
-    private final int TARGET_ROWS = 40;
-    private final int MIN_FONT_SIZE = 8;
-    private final int MAX_FONT_SIZE = 32;
-    private int resizeCheckCounter = 3; // Check every N frames
+    private static final int TARGET_COLUMNS = 120;
+    private static final int TARGET_ROWS = 40;
+    private static final int MIN_FONT_SIZE = 8;
+    private static final int MAX_FONT_SIZE = 32;
 
     // Farbtheme für das Spiel
     public static final TextColor BACKGROUND_COLOR = TextColor.ANSI.BLACK;
@@ -248,7 +241,6 @@ public class ScreenManager {
         // Apply scaling factor
         fontSize = (int) (fontSize * scalingMode.getScaleFactor());
         fontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, fontSize));
-        currentFontSize = fontSize;
 
         // Terminalfactory setup
         DefaultTerminalFactory terminalFactory = new DefaultTerminalFactory();
@@ -468,21 +460,10 @@ public class ScreenManager {
     }
 
     /**
-     * Apply new display settings with optional display selection
+     * Neue Display-Einstellungen anwenden (Terminal wird neu erstellt)
      */
-    public void applyDisplaySettings(Object displayMode, Object scalingMode) {
-        applyDisplaySettings(displayMode, scalingMode, selectedDisplayId);
-    }
-
-    /**
-     * Apply new display settings including display selection
-     */
-    public void applyDisplaySettings(Object displayMode, Object scalingMode, String displayId) {
+    public void applyDisplaySettings(DisplayMode newDisplayMode, ScalingMode newScalingMode, String displayId) {
         try {
-            // Convert from SettingsScreen enums to ScreenManager enums
-            DisplayMode newDisplayMode = DisplayMode.valueOf(displayMode.toString());
-            ScalingMode newScalingMode = ScalingMode.valueOf(scalingMode.toString());
-
             // Store new settings
             currentDisplayMode = newDisplayMode;
             currentScalingMode = newScalingMode;
@@ -555,22 +536,15 @@ public class ScreenManager {
     }
 
     /**
-     * Wechselt zu einem anderen Screen mit Fade-Animation
+     * Wechselt zu einem anderen Screen
      */
     public void switchToScreen(String screenName) {
         GameScreen newScreen = screens.get(screenName);
-        if (newScreen != null) {
-            // Fade-Out Animation
-            if (currentScreen != null) {
-                fadeOut();
-            }
-
-            currentScreen = newScreen;
-            currentScreen.initialize();
-
-            // Fade-In Animation
-            fadeIn();
+        if (newScreen == null) {
+            throw new IllegalArgumentException("Unbekannter Screen: " + screenName);
         }
+        currentScreen = newScreen;
+        currentScreen.initialize();
     }
 
     /**
@@ -592,7 +566,7 @@ public class ScreenManager {
             KeyStroke keyStroke = screen.pollInput();
             if (keyStroke != null) {
                 if (keyStroke.getKeyType() == KeyType.Escape) {
-                    // ESC zum Beenden (kann angepasst werden)
+                    // ESC entscheidet der screen selbst (zurück, dialog, beenden)
                     if (currentScreen.onEscape()) {
                         running = false;
                     }
@@ -603,9 +577,6 @@ public class ScreenManager {
 
             // Update-Logik (für Animationen)
             currentScreen.update();
-
-            // Einfache dynamische Font-Skalierung
-            checkForSimpleResize();
 
             // Frame-Rate begrenzen (ca. 30 FPS)
             try {
@@ -629,69 +600,10 @@ public class ScreenManager {
     }
 
     /**
-     * Fade-In Animation
-     */
-    private void fadeIn() {
-        // Einfache Fade-Animation durch schrittweises Zeichnen
-        for (int i = 0; i < 10; i++) {
-            clearScreen();
-            graphics.setForegroundColor(new TextColor.RGB(
-                    i * 25, i * 25, i * 25
-            ));
-            currentScreen.render(graphics);
-            try {
-                screen.refresh();
-                Thread.sleep(50);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        graphics.setForegroundColor(TEXT_COLOR);
-    }
-
-    /**
-     * Fade-Out Animation
-     */
-    private void fadeOut() {
-        for (int i = 10; i >= 0; i--) {
-            clearScreen();
-            graphics.setForegroundColor(new TextColor.RGB(
-                    i * 25, i * 25, i * 25
-            ));
-            currentScreen.render(graphics);
-            try {
-                screen.refresh();
-                Thread.sleep(30);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    /**
-     * Resize-Check deaktiviert da Fenster nicht mehr verändert werden kann
-     * (Vollbildmodus ohne Dekoration, Größenänderung deaktiviert)
-     */
-    private void checkForSimpleResize() {
-        // Resize-Check deaktiviert da Vollbildmodus mit fester Größe
-        // Das verhindert das "Herumspringen" der ASCII-Zeichen
-        return;
-    }
-
-    /**
      * Shutdown the GUI cleanly
      */
     public void shutdown() {
         shutdownTerminal();
-    }
-
-    // Getter für Screens
-    public Screen getScreen() {
-        return screen;
-    }
-
-    public TextGraphics getGraphics() {
-        return graphics;
     }
 
     public TerminalSize getSize() {
