@@ -4,17 +4,19 @@ import com.informatikgame.world.EnemyType;
 
 public class Enemy extends Character {
 
-    // Constructor
     public Enemy(EnemyType enemyType) {
-        super(enemyType.lifeTotal, enemyType.armourValue, enemyType.initiative,
-                enemyType.attack, enemyType.defense, enemyType.damage, enemyType.numW6,
-                enemyType.finteLevel, enemyType.wuchtschlagLevel, enemyType.enemyType);
+        this(enemyType, enemyType.werte);
     }
 
-    public Enemy(int lifeTotal, int armourValue, int initiative, int attack,
-            int defense, int damage, int numW6, int finteLevel,
-            int wuchtschlagLevel, String enemyType) {
-        super(lifeTotal, armourValue, initiative, attack, defense, damage,
-                numW6, finteLevel, wuchtschlagLevel, enemyType);
+    /**
+     * Gegner mit angepassten Werten (z.B. durch die Schwierigkeit)
+     */
+    public Enemy(EnemyType enemyType, Werte werte) {
+        super(werte, enemyType.enemyType);
+    }
+
+    @Override
+    public boolean istSpieler() {
+        return false;
     }
 }
