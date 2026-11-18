@@ -1,33 +1,19 @@
 package com.informatikgame.world;
 
+import com.informatikgame.entities.Werte;
+
 public enum EnemyType {
-    //int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int finteLevel, int wuchtschlagLevel String enemyType
-    MINI_ZOMBIE(10, 1, 12, 10, 6, 1, 1, 1, 0, "Mini Zombie"),
-    SCIENTIST(15, 0, 10, 12, 10, 4, 1, 2, 1, "Scientist"),
-    BIG_ZOMBIE(20, 3, 6, 13, 8, 2, 2, 1, 2, "Big Zombie"),
-    ENDBOSS(50, 5, 4, 14, 10, 1, 4, 3, 3, "Endboss");
+    // lebenspunkte, ruestung, initiative, angriff, verteidigung, schaden, anzahlW6, finteLevel, wuchtschlagLevel
+    MINI_ZOMBIE("Mini Zombie", new Werte(10, 1, 12, 10, 6, 1, 1, 1, 0)),
+    SCIENTIST("Scientist", new Werte(15, 0, 10, 12, 10, 4, 1, 2, 1)),
+    BIG_ZOMBIE("Big Zombie", new Werte(20, 3, 6, 13, 8, 2, 2, 1, 2)),
+    ENDBOSS("Endboss", new Werte(50, 5, 4, 14, 10, 1, 4, 3, 3));
 
-    public int lifeTotal;
-    public int armourValue;
-    public int initiative;
-    public int attack;
-    public int defense;
-    public int damage;
-    public int numW6;
-    public int finteLevel;
-    public int wuchtschlagLevel;
-    public String enemyType;
+    public final String enemyType;
+    public final Werte werte;
 
-    EnemyType(int lifeTotal, int armourValue, int initiative, int attack, int defense, int damage, int numW6, int finteLevel, int wuchtschlagLevel, String enemyType) {
-        this.lifeTotal = lifeTotal;
-        this.armourValue = armourValue;
-        this.initiative = initiative;
-        this.attack = attack;
-        this.defense = defense;
-        this.damage = damage;
-        this.numW6 = numW6;
-        this.finteLevel = finteLevel;
-        this.wuchtschlagLevel = wuchtschlagLevel;
+    EnemyType(String enemyType, Werte werte) {
         this.enemyType = enemyType;
+        this.werte = werte;
     }
 }

@@ -1,86 +1,54 @@
 package com.informatikgame.world;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
- * The world class represents a collection of rooms in a game environment. It
- * manages the current room, allows navigation between rooms, and provides
- * methods to access and modify room-related information.
+ * Die Welt ist eine feste Reihe von Räumen, die man nacheinander durchläuft.
  */
 public class World {
 
-    // Variabeln
-    private final int room_count;
-    private final ArrayList<Room> roomList;
-    private Room current_room;
-    private int current_room_number;
+    private final List<RoomType> raeume;
+    private int aktuelleRaumNummer;
 
-    /**
-     * Constructs a new world with the specified rooms
-     *
-     * @param roomsInWorld THe list of rooms in the world.
-     */
-    public World(RoomType[] roomsInWorld) {
-        this.room_count = roomsInWorld.length;
-        this.roomList = new ArrayList<>(roomsInWorld.length);
-        for (RoomType room : roomsInWorld) {
-            roomList.add(new Room(room));
+    public World(List<RoomType> raeume) {
+        if (raeume.isEmpty()) {
+            throw new IllegalArgumentException("Welt braucht mindestens einen Raum");
         }
-        this.current_room_number = 0;
-        this.current_room = roomList.get(current_room_number);
+        this.raeume = List.copyOf(raeume);
+        this.aktuelleRaumNummer = 0;
     }
 
     /**
-     * Advances the game to the next room if the current room number is less
-     * than the total room count
+     * Standardwelt mit allen Räumen in der Reihenfolge vom Enum
      */
-    public void advance_to_next_room() {
-        if (current_room_number < room_count - 1) {
-            this.current_room_number++;
-            this.current_room = roomList.get(this.current_room_number);
-        } else {
-            System.out.println("Kein weiterer Raum vorhanden!");
-        }
+    public static World standardWelt() {
+        return new World(List.of(RoomType.values()));
     }
 
-    /**
-     * See if theres more rooms
-     */
     public boolean hasNextRoom() {
-        return current_room_number < room_count - 1;
+        return aktuelleRaumNummer < raeume.size() - 1;
     }
 
-    /**
-     * @return current progress
-     */
-    public String getProgress() {
-        return "Raum " + (current_room_number + 1) + " von " + room_count;
+    public void naechsterRaum() {
+        if (!hasNextRoom()) {
+            throw new IllegalStateException("Kein weiterer Raum vorhanden!");
+        }
+        aktuelleRaumNummer++;
     }
 
-    // ===== GETTER METHODS =====
-    public int getRoom_count() {
-        return room_count;
+    public RoomType getAktuellerRaum() {
+        return raeume.get(aktuelleRaumNummer);
     }
 
-    public ArrayList<Room> getRoomList() {
-        return roomList;
+    public int getAktuelleRaumNummer() {
+        return aktuelleRaumNummer;
     }
 
-    public Room getCurrent_room() {
-        return current_room;
+    public int getRaumAnzahl() {
+        return raeume.size();
     }
 
-    public int getCurrent_room_number() {
-        return current_room_number;
+    public List<RoomType> getRaeume() {
+        return raeume;
     }
-
-    // ===== SETTER METHODS =====
-    public void setCurrent_room(Room room) {
-        this.current_room = room;
-    }
-
-    public void setCurrent_room_number(int number) {
-        this.current_room_number = number;
-    }
-
 }
