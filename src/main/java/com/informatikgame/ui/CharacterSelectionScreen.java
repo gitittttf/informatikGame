@@ -1,27 +1,16 @@
 package com.informatikgame.ui;
 
-import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
-import com.googlecode.lanterna.input.KeyStroke;
-import com.informatikgame.core.GameManager;
+import com.informatikgame.entities.Werte;
 import com.informatikgame.world.PlayerType;
 
-public class CharacterSelectionScreen extends GameScreen {
+public class CharacterSelectionScreen extends MenueScreen {
 
-    private GameManager gameManager;
+    private static final PlayerType[] AUSWAHL = {PlayerType.SWORD_FIGHTER, PlayerType.SHIELD_FIGHTER};
 
-    public void setGameManager(GameManager gameManager) {
-        this.gameManager = gameManager;
-    }
-    private int selectedOption = 0;
-    private final String[] characterSelectionOptions = {
-        "► Schwertkrieger",
-        "► Schildkrieger"
-    };
-
-    private final String[] titleArt = {
+    private static final String[] TITLE_ART = {
         " ▄████▄   ██░ ██  ▄▄▄       ██▀███   ▄▄▄       ▄████▄  ▄▄▄█████▓▓█████  ██▀███    ██████ ",
         "▒██▀ ▀█  ▓██░ ██▒▒████▄    ▓██ ▒ ██▒▒████▄    ▒██▀ ▀█  ▓  ██▒ ▓▒▓█   ▀ ▓██ ▒ ██▒▒██    ▒ ",
         "▒▓█    ▄ ▒██▀▀██░▒██  ▀█▄  ▓██ ░▄█ ▒▒██  ▀█▄  ▒▓█    ▄ ▒ ▓██░ ▒░▒███   ▓██ ░▄█ ▒░ ▓██▄   ",
@@ -29,181 +18,70 @@ public class CharacterSelectionScreen extends GameScreen {
         "▒ ▓███▀ ░░▓█▒░██▓ ▓█   ▓██▒░██▓ ▒██▒ ▓█   ▓██▒▒ ▓███▀ ░  ▒██▒ ░ ░▒████▒░██▓ ▒██▒▒██████▒▒"
     };
 
-    private final String subtitle = "Wähle ein Charakter aus";
+    private final String[] optionen;
+    private SchwierigkeitScreen schwierigkeitScreen;
 
-    // Partikelsystem für Hintergrundanimation
-    private Particle[] particles;
-
-    class Particle {
-
-        int x, y;
-        char symbol;
-        TextColor color;
-        int speedY;
-        int speedX;
-
-        @SuppressWarnings("OverridableMethodCallInConstructor")
-        Particle() {
-            reset();
-        }
-
-        void reset() {
-            TerminalSize size = screenManager.getSize();
-            // Startpositionen
-            x = (int) (Math.random() * size.getColumns());
-            y = (int) (Math.random() * size.getRows());
-            // Geschwindigkeit
-            speedY = 1 + (int) (Math.random() * 0.2);
-            speedX = 1 + (int) (Math.random() * 0.2);
-
-            // Symbole
-            char[] symbols = {'*', '·', '•'};
-            symbol = symbols[(int) (Math.random() * symbols.length)];
-
-            // Farbe
-            int white = 50 + (int) (Math.random() * 150);
-            color = new TextColor.RGB(white, white, white);
-        }
-
-        void update() {
-            y += speedY;
-            x += speedX;
-            TerminalSize size = screenManager.getSize();
-            if (y >= size.getRows() || x >= size.getColumns()) {
-                reset();
-            }
+    public CharacterSelectionScreen() {
+        optionen = new String[AUSWAHL.length];
+        for (int i = 0; i < AUSWAHL.length; i++) {
+            optionen[i] = "► " + AUSWAHL[i].anzeigeName;
         }
     }
 
-    @Override
-    public void initialize() {
-        // Initialisiere Partikelsystem
-        particles = new Particle[50];
-        for (int i = 0; i < particles.length; i++) {
-            particles[i] = new Particle();
-            // Verteile über den Bildschirm
-            particles[i].y = (int) (Math.random() * screenManager.getSize().getRows());
-        }
+    public void setSchwierigkeitScreen(SchwierigkeitScreen schwierigkeitScreen) {
+        this.schwierigkeitScreen = schwierigkeitScreen;
     }
 
     @Override
-    public void render(TextGraphics graphics) {
+    protected String[] getTitelArt() {
+        return TITLE_ART;
+    }
+
+    @Override
+    protected String getUntertitel() {
+        return "Wähle einen Charakter aus";
+    }
+
+    @Override
+    protected String[] getOptionen() {
+        return optionen;
+    }
+
+    @Override
+    protected int getPartikelAnzahl() {
+        return 50;
+    }
+
+    @Override
+    protected void partikelZuruecksetzen(Partikel p, boolean start) {
+        // weiße sterne die schräg durchs bild fliegen
         TerminalSize size = screenManager.getSize();
+        p.x = (int) (Math.random() * size.getColumns());
+        p.y = (int) (Math.random() * size.getRows());
+        p.dx = 1 + (int) (Math.random() * 2);
+        p.dy = 1 + (int) (Math.random() * 2);
 
-        // Hintergrund-Partikel rendern (Matrix-Regen-Effekt)
-        for (Particle p : particles) {
-            graphics.setForegroundColor(p.color);
-            graphics.setCharacter(p.x, p.y, p.symbol);
-        }
+        char[] symbols = {'*', '·', '•'};
+        p.symbol = symbols[(int) (Math.random() * symbols.length)];
+        int white = 50 + (int) (Math.random() * 150);
+        p.color = new TextColor.RGB(white, white, white);
+    }
 
-        // Titel mit Glitch-Effekt
-        int titleY = 5;
-        for (int i = 0; i < titleArt.length; i++) {
-            // Zufälliger Glitch-Effekt
-            if (animationFrame % 30 == 0 && Math.random() < 0.1) {
-                // Glitch: verschiebe Zeile leicht
-                int offset = (int) (Math.random() * 3) - 1;
-                graphics.setForegroundColor(new TextColor.RGB(153, 153, 0));
-                drawCentered(graphics, titleArt[i], titleY + i + offset);
-            } else {
-                // Normal: grüne Farbe mit Pulsieren
-                // int brightness2 = 150 + (int) (Math.cos(animationFrame * 0.2 + i) * 70);
-                int brightness = 150 + (int) (Math.sin(animationFrame * 0.2 + i) * 70);
-                graphics.setForegroundColor(new TextColor.RGB(0, brightness, 0));
-                drawCentered(graphics, titleArt[i], titleY + i);
-            }
-            drawCentered(graphics, titleArt[i], titleY + i);
-        }
-
-        // Untertitel mit Typewriter-Effekt
+    @Override
+    protected void zeichneZusatz(TextGraphics graphics, int y) {
+        // werte vom ausgewählten charakter anzeigen
+        Werte w = AUSWAHL[selectedOption].werte;
         graphics.setForegroundColor(ScreenManager.SECONDARY_COLOR);
-        String displaySubtitle = subtitle;
-        if (animationFrame < subtitle.length()) {
-            displaySubtitle = subtitle.substring(0, animationFrame);
-        }
-        drawCentered(graphics, displaySubtitle, titleY + titleArt.length + 2);
-
-        // Menü Box
-        int menuY = titleY + titleArt.length + 5;
-        int menuWidth = 40;
-        int menuHeight = characterSelectionOptions.length + 4;
-        int menuX = (size.getColumns() - menuWidth) / 2;
-
-        // Box mit animiertem Rahmen
-        TextColor borderColor = animationFrame % 20 < 10
-                ? ScreenManager.PRIMARY_COLOR : ScreenManager.SECONDARY_COLOR;
-        drawBox(graphics, menuX, menuY, menuWidth, menuHeight,
-                borderColor, ScreenManager.BACKGROUND_COLOR);
-
-        // Menü Optionen
-        for (int i = 0; i < characterSelectionOptions.length; i++) {
-            int optionY = menuY + 2 + i;
-            String option = characterSelectionOptions[i];
-
-            if (i == selectedOption) {
-                // Ausgewählte Option ist animiert und hervorgehoben
-                graphics.setBackgroundColor(new TextColor.RGB(0, 50, 0));
-                graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-
-                // Animierter Pfeil
-                String arrow = (animationFrame % 10 < 5) ? "►►► " : ">>>>";
-                graphics.putString(new TerminalPosition(menuX + 2, optionY),
-                        arrow + option.substring(1) + " " + arrow);
-            } else {
-                // Normale Option
-                graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
-                graphics.setForegroundColor(ScreenManager.TEXT_COLOR);
-                graphics.putString(new TerminalPosition(menuX + 5, optionY), option);
-            }
-        }
-
-        // Footer mit Steuerungshinweisen
-        graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
-        graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-        String controls = "↑↓ Navigation | ENTER Auswählen | ESC Zurück";
-        drawCentered(graphics, controls, size.getRows() - 2);
+        drawCentered(graphics, String.format("Leben %d  |  Rüstung %d  |  Initiative %d  |  Angriff %d  |  Verteidigung %d",
+                w.lebenspunkte(), w.ruestung(), w.initiative(), w.angriff(), w.verteidigung()), y);
+        drawCentered(graphics, String.format("Schaden %d + %dW6  |  Finte bis Level %d  |  Wuchtschlag bis Level %d",
+                w.schaden(), w.anzahlW6(), w.finteLevel(), w.wuchtschlagLevel()), y + 1);
     }
 
     @Override
-    public void handleInput(KeyStroke keyStroke) {
-        if (null != keyStroke.getKeyType()) {
-            switch (keyStroke.getKeyType()) {
-                case ArrowUp ->
-                    selectedOption = (selectedOption - 1 + characterSelectionOptions.length) % characterSelectionOptions.length;
-                case ArrowDown ->
-                    selectedOption = (selectedOption + 1) % characterSelectionOptions.length;
-                case Enter ->
-                    executeOption();
-                default -> {
-                }
-            }
-        }
-    }
-
-    private void executeOption() {
-        PlayerType selectedType;
-        selectedType = switch (selectedOption) {
-            case 0 ->
-                PlayerType.SWORD_FIGHTER;
-            case 1 ->
-                PlayerType.SHIELD_FIGHTER;
-            default ->
-                PlayerType.SWORD_FIGHTER;
-        };
-
-        // Initialize game with selected player type
-        gameManager.initializeGameWithPlayer(selectedType);
-        screenManager.switchToScreen("game");
-    }
-
-    @Override
-    public void update() {
-        super.update();
-
-        // Update Partikel
-        for (Particle p : particles) {
-            p.update();
-        }
+    protected void optionAusgewaehlt(int index) {
+        schwierigkeitScreen.setPlayerType(AUSWAHL[index]);
+        screenManager.switchToScreen("schwierigkeit");
     }
 
     @Override

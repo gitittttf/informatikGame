@@ -1,25 +1,21 @@
 package com.informatikgame.ui;
 
-import com.googlecode.lanterna.TerminalPosition;
-import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 
 /**
  * Hauptmenü mit animiertem ASCII-Art und Menü-Optionen
  */
-public class MainMenuScreen extends GameScreen {
+public class MainMenuScreen extends MenueScreen {
 
-    private int selectedOption = 0;
-    private final String[] menuOptions = {
+    private static final String[] MENU_OPTIONS = {
         "► Neues Spiel starten",
         "► Einstellungen",
         "► Spiel beenden"
     };
 
-    // ASCII-Art als Array für bessere Animation
-    private final String[] titleArt = {
+    private static final String[] TITLE_ART = {
         " ▓█████▄  █    ██  ███▄    █   ▄████ ▓█████  ▒█████   ███▄    █ ",
         " ▒██▀ ██▌ ██  ▓██▒ ██ ▀█   █  ██▒ ▀█▒▓█   ▀ ▒██▒  ██▒ ██ ▀█   █ ",
         " ░██   █▌▓██  ▒██░▓██  ▀█ ██▒▒██░▄▄▄░▒███   ▒██░  ██▒▓██  ▀█ ██▒",
@@ -27,176 +23,73 @@ public class MainMenuScreen extends GameScreen {
         " ░▒████▓ ▒▒█████▓ ▒██░   ▓██░░▒▓███▀▒░▒████▒░ ████▓▒░▒██░   ▓██░"
     };
 
-    private final String subtitle = "Von Paul, Benedikt und Simon";
-
-    // Partikelsystem für Hintergrundanimation
-    private Particle[] particles;
-
-    class Particle {
-
-        int x, y;
-        char symbol;
-        TextColor color;
-        int speed;
-
-        @SuppressWarnings("OverridableMethodCallInConstructor")
-        Particle() {
-            reset();
-        }
-
-        void reset() {
-            TerminalSize size = screenManager.getSize();
-            x = (int) (Math.random() * size.getColumns());
-            y = 0;
-            speed = 1 + (int) (Math.random() * 3);
-
-            // Verschiedene Symbole für Atmosphäre
-            char[] symbols = {'░', '▒', '▓', '█', '*', '·', '•'};
-            symbol = symbols[(int) (Math.random() * symbols.length)];
-
-            // Grün-Töne für Matrix-Effekt
-            // TODO: Random farben für die partikel testen
-            int green = 50 + (int) (Math.random() * 150);
-            color = new TextColor.RGB(0, green, 0);
-        }
-
-        void update() {
-            y += speed;
-            TerminalSize size = screenManager.getSize();
-            if (y >= size.getRows()) {
-                reset();
-            }
-        }
-    }
+    private boolean beendenFragen = false;
 
     @Override
     public void initialize() {
-        // Initialisiere Partikelsystem
-        particles = new Particle[30];
-        for (int i = 0; i < particles.length; i++) {
-            particles[i] = new Particle();
-            // Verteile initial über den Bildschirm
-            particles[i].y = (int) (Math.random() * screenManager.getSize().getRows());
+        super.initialize();
+        beendenFragen = false;
+    }
+
+    @Override
+    protected String[] getTitelArt() {
+        return TITLE_ART;
+    }
+
+    @Override
+    protected String getUntertitel() {
+        return "Von Paul, Benedikt und Simon";
+    }
+
+    @Override
+    protected String[] getOptionen() {
+        return MENU_OPTIONS;
+    }
+
+    @Override
+    protected String getSteuerung() {
+        return "↑↓ Navigation | ENTER Auswählen | ESC Beenden";
+    }
+
+    @Override
+    protected void optionAusgewaehlt(int index) {
+        switch (index) {
+            case 0 ->
+                screenManager.switchToScreen("characterSelection");
+            case 1 ->
+                screenManager.switchToScreen("settings");
+            case 2 ->
+                screenManager.stopRunning();
+            default -> {
+            }
         }
     }
 
     @Override
     public void render(TextGraphics graphics) {
-        TerminalSize size = screenManager.getSize();
-
-        // Hintergrund-Partikel rendern (Matrix-Regen-Effekt)
-        for (Particle p : particles) {
-            graphics.setForegroundColor(p.color);
-            graphics.setCharacter(p.x, p.y, p.symbol);
+        super.render(graphics);
+        if (beendenFragen) {
+            drawDialog(graphics, "Spiel wirklich beenden?");
         }
-
-        // Titel mit Glitch-Effekt
-        int titleY = 5;
-        for (int i = 0; i < titleArt.length; i++) {
-            // Zufälliger Glitch-Effekt
-            if (animationFrame % 30 == 0 && Math.random() < 0.1) {
-                // Glitch: verschiebe Zeile leicht
-                int offset = (int) (Math.random() * 3) - 1;
-                graphics.setForegroundColor(new TextColor.RGB(153, 153, 0)); // TODO richtige farbe finden
-                drawCentered(graphics, titleArt[i], titleY + i + offset);
-            } else {
-                // Normal: grüne Farbe mit Pulsieren
-                int brightness = 150 + (int) (Math.sin(animationFrame * 0.2 + i) * 70);
-                graphics.setForegroundColor(new TextColor.RGB(0, brightness, 0));
-                drawCentered(graphics, titleArt[i], titleY + i);
-            }
-        }
-
-        // Untertitel mit Typewriter-Effekt
-        graphics.setForegroundColor(ScreenManager.SECONDARY_COLOR);
-        String displaySubtitle = subtitle;
-        if (animationFrame < subtitle.length()) {
-            displaySubtitle = subtitle.substring(0, animationFrame);
-        }
-        drawCentered(graphics, displaySubtitle, titleY + titleArt.length + 2);
-
-        // Menü Box
-        int menuY = titleY + titleArt.length + 5;
-        int menuWidth = 40;
-        int menuHeight = menuOptions.length + 4;
-        int menuX = (size.getColumns() - menuWidth) / 2;
-
-        // Box mit animiertem Rahmen
-        TextColor borderColor = animationFrame % 20 < 10
-                ? ScreenManager.PRIMARY_COLOR : ScreenManager.SECONDARY_COLOR;
-        drawBox(graphics, menuX, menuY, menuWidth, menuHeight,
-                borderColor, ScreenManager.BACKGROUND_COLOR);
-
-        // Menü Optionen
-        for (int i = 0; i < menuOptions.length; i++) {
-            int optionY = menuY + 2 + i;
-            String option = menuOptions[i];
-
-            if (i == selectedOption) {
-                // Ausgewählte Option ist animiert und hervorgehoben
-                graphics.setBackgroundColor(new TextColor.RGB(0, 50, 0));
-                graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-
-                // Animierter Pfeil
-                String arrow = (animationFrame % 10 < 5) ? "►►► " : ">>>>";
-                graphics.putString(new TerminalPosition(menuX + 2, optionY),
-                        arrow + option.substring(1) + " " + arrow);
-            } else {
-                // Normale Option
-                graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
-                graphics.setForegroundColor(ScreenManager.TEXT_COLOR);
-                graphics.putString(new TerminalPosition(menuX + 5, optionY), option);
-            }
-        }
-
-        // Footer mit Steuerungshinweisen
-        graphics.setBackgroundColor(ScreenManager.BACKGROUND_COLOR);
-        graphics.setForegroundColor(TextColor.ANSI.YELLOW);
-        String controls = "↑↓ Navigation | ENTER Auswählen | ESC Zurück";
-        drawCentered(graphics, controls, size.getRows() - 2);
     }
 
     @Override
     public void handleInput(KeyStroke keyStroke) {
-        if (null != keyStroke.getKeyType()) {
-            switch (keyStroke.getKeyType()) {
-                case ArrowUp ->
-                    selectedOption = (selectedOption - 1 + menuOptions.length) % menuOptions.length;
-                case ArrowDown ->
-                    selectedOption = (selectedOption + 1) % menuOptions.length;
-                case Enter ->
-                    executeOption();
-                default -> {
-                }
-            }
-        }
-    }
-
-    private void executeOption() {
-        switch (selectedOption) {
-            case 0 -> // Neues Spiel
-                screenManager.switchToScreen("characterSelection");
-            case 1 -> // Einstellungen
-                screenManager.switchToScreen("settings");
-            case 2 -> // Beenden
+        if (beendenFragen) {
+            if (istJa(keyStroke) || keyStroke.getKeyType() == KeyType.Enter) {
                 screenManager.stopRunning();
+            } else if (istNein(keyStroke)) {
+                beendenFragen = false;
+            }
+            return;
         }
-        // Fortsetzen
-    }
-
-    @Override
-    public void update() {
-        super.update();
-
-        // Update Partikel
-        for (Particle p : particles) {
-            p.update();
-        }
+        super.handleInput(keyStroke);
     }
 
     @Override
     public boolean onEscape() {
-        // Im Hauptmenü: ESC beendet das Spiel
-        return selectedOption == 2; // Nur wenn "Beenden" ausgewählt
+        // erstes ESC fragt nach, zweites ESC bricht die frage ab
+        beendenFragen = !beendenFragen;
+        return false;
     }
 }
