@@ -1,9 +1,7 @@
 # Maven
 target/
-.mvn/
 
 # IDE
-.vscode/
 .idea/
 *.iml
 
@@ -20,6 +18,3 @@ lib/
 # System
 .DS_Store
 Thumbs.db
-
-# Maven Wrapper (optional, kann auch mit committed werden)
-#.mvn/wrapper/maven-wrapper.properties

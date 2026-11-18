@@ -26,14 +26,9 @@
         <!-- JUnit für Tests -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
+            <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <artifactId>junit</artifactId>
-            <groupId>junit</groupId>
-            <version>4.11</version>
         </dependency>
     </dependencies>
 
@@ -144,7 +139,6 @@
                             <!-- JRE requirements -->
                             <jre>
                                 <minVersion>17.0.0</minVersion>
-                                <maxVersion>21.0.0</maxVersion>
                                 <requires64Bit>false</requires64Bit>
                                 <requiresJdk>false</requiresJdk>
                                 <!-- JVM options for better performance and fullscreen -->
