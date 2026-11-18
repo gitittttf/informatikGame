@@ -1,343 +1,269 @@
 package com.informatikgame.core;
 
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.informatikgame.combat.FightManager;
+import com.informatikgame.entities.AngriffsErgebnis;
 import com.informatikgame.entities.Enemy;
 import com.informatikgame.entities.Player;
-import com.informatikgame.ui.GameplayScreen;
-import com.informatikgame.ui.StoryDatabank;
+import com.informatikgame.entities.Wuerfel;
 import com.informatikgame.world.EnemyType;
 import com.informatikgame.world.PlayerType;
-import com.informatikgame.world.Room;
 import com.informatikgame.world.RoomType;
-import com.informatikgame.world.RoomUpgrade;
+import com.informatikgame.world.Schwierigkeit;
 import com.informatikgame.world.UpgradeType;
 import com.informatikgame.world.World;
 
 /**
- * GameManager - Zentrale Spiellogik und Event-Koordination
+ * GameManager - Zentrale Spiellogik
  *
- * Diese Klasse orchestriert das gesamte Spiel und fungiert als Verbindung
- * zwischen:
+ * Ablauf pro Raum: STORY → (Enter) → KAMPF → RAUM_ENDE_STORY → (Enter) →
+ * WARTE_AUF_WEITER → (Enter) → nächster Raum. Nach dem letzten Raum kommt
+ * SIEG, wenn man stirbt GAME_OVER.
  *
- * === SYSTEM-KOMPONENTEN ===
- * <ul>
- * <li>World: Raum-Navigation und Dungeon-Struktur</li>
- * <li>FightManager: Kampf-System und Gegner-Interaktionen</li>
- * <li>Player: Spieler-Zustand und Attribute</li>
- * <li>Story-System: Narrative Events und Text-Anzeige</li>
- * <li>UI (GameEventListener): Benutzeroberflächen-Updates</li>
- * </ul>
- * === EVENT-SYSTEM === Implementiert Observer-Pattern für UI-Updates: -
- * Combat-Events: Kampf-Start/Ende, HP-Änderungen - Navigation-Events:
- * Raum-Wechsel, Fortschritt - Story-Events: Text-Anzeige,
- * Benutzer-Entscheidungen
- *
- * === SPIEL-ABLAUF === 1. Spieler betritt Raum → Story-Anzeige 2.
- * Benutzer-Input → Navigation oder Kampf 3. Kampf-Resolution → Fortschritt oder
- * Game Over 4. Raum-Übergang → Wiederholen bis Sieg
+ * Die UI ruft nur weiter() und spielerAngriff() auf und bekommt alles andere
+ * als Ereignisse über den SpielListener.
  */
 public class GameManager implements FightManager.CombatEventListener {
 
-    public void setPlayer(Player player) {
-        this.player = player;
+    public interface SpielListener {
+
+        void onEreignis(Ereignis ereignis);
     }
 
-    /**
-     * Event-Listener Interface für UI-Updates
-     *
-     * Alle Methoden werden vom GameManager aufgerufen, um die
-     * Benutzeroberfläche über Spielzustand-Änderungen zu informieren. Das UI
-     * (GameplayScreen) implementiert dieses Interface.
-     */
-    public interface GameEventListener {
+    // pausen fürs log in ms, damit man den kampf mitlesen kann
+    private static final long PAUSE_KURZ = 200;
+    private static final long PAUSE_NORMAL = 400;
+    private static final long PAUSE_LANG = 600;
+    private static final long PAUSE_VOR_STORY = 1200;
 
-        /**
-         * Neue Kampf-Log Nachricht für UI-Anzeige
-         */
-        void onCombatLogUpdate(String message);
-
-        /**
-         * Spieler hat neuen Raum betreten
-         */
-        void onRoomChange(int roomNumber, int totalRooms, String roomName);
-
-        /**
-         * Spieler-HP hat sich geändert
-         */
-        void onPlayerHealthChange(int current, int max);
-
-        /**
-         * Gegner-Liste wurde aktualisiert (HP, Anzahl)
-         */
-        void onEnemyUpdate(Enemy[] enemies);
-
-        /**
-         * Kampf hat begonnen - UI in Kampf-Modus wechseln
-         */
-        void onCombatStart();
-
-        /**
-         * Kampf beendet - won=true bei Sieg, false bei Niederlage
-         */
-        void onCombatEnd(boolean won);
-
-        /**
-         * Spieler ist gestorben - Game Over Screen anzeigen
-         */
-        void onGameOver();
-
-        /**
-         * Alle Räume abgeschlossen - Victory Screen anzeigen
-         */
-        void onVictory();
-
-        /**
-         * Spieler-Aktion für Debug/Log-Zwecke
-         */
-        void onPlayerAction(String action);
-
-        /**
-         * Spieler-Aktion für Debug/Log-Zwecke
-         */
-        void onWaitingForRoomTransition();
-
-        /**
-         * Story-Text soll angezeigt werden (Vollbild-Modus)
-         */
-        void onStoryDisplay(String storyText);
-    }
-
+    private final Wuerfel wuerfel;
+    private SpielListener listener;
     private World world;
     private FightManager fightManager;
     private Player player;
-    private GameEventListener eventListener;
-    private final Queue<String> inputQueue;
-    private boolean waitingForInput;
-    private boolean gameRunning;
+    private Schwierigkeit schwierigkeit = Schwierigkeit.NORMAL;
+    private Spielphase phase;
 
-    private final String[] roomNames = {
-        "Eingangsbereich",
-        "Verlassener Flur",
-        "Alte Bibliothek",
-        "Speisekammer",
-        "Speisesaal",
-        "Laboratorium",
-        "Dunkler Korridor",
-        "Boss-Kammer"
-    };
-
-    /**
-     * Initialisiert den GameManager und das Spiel-System
-     *
-     * Erstellt alle benötigten Komponenten: - Input-Queue für asynchrone
-     * Benutzereingaben - Spiel-Zustand Variablen - Ruft initializeGame() für
-     * World/Player Setup auf
-     */
     public GameManager() {
-        this.inputQueue = new LinkedList<>();
-        this.waitingForInput = false;
-        // initializeGame();
+        this(new Wuerfel());
     }
 
-    public void setEventListener(GameEventListener listener) {
-        this.eventListener = listener;
+    public GameManager(Wuerfel wuerfel) {
+        this.wuerfel = wuerfel;
+    }
+
+    public void setListener(SpielListener listener) {
+        this.listener = listener;
     }
 
     /**
-     * Initialisiert das Spiel mit Standardwerten
+     * Neues Spiel vorbereiten, alter Zustand wird komplett verworfen
      */
-    public void initializeGameWithPlayer(PlayerType playerType) {
-        // Spieler mit PlayerType erstellen
-        // lifeTotal, armourValue, initiative, attack, defense, damage
+    public void initialisiereSpiel(PlayerType playerType, Schwierigkeit schwierigkeit) {
         this.player = new Player(playerType);
-
-        this.fightManager = new FightManager(player);
-        this.fightManager.setCombatEventListener(this);  // Set GameManager as combat listener
-
-        // Welt mit vordefinierten Räumen erstellen (erstmal so testweise)
-        RoomType[] gameRooms = {
-            RoomType.INTRO_ROOM,
-            RoomType.FLOOR_ROOM,
-            RoomType.PANTRY_1,
-            RoomType.LIBRARY_ROOM,
-            RoomType.DINING_HALL,
-            RoomType.LABORATORY,
-            RoomType.CORRIDOR,
-            RoomType.FINAL_ROOM
-        };
-
-        this.world = new World(gameRooms);
-        this.gameRunning = true;
+        this.schwierigkeit = schwierigkeit;
+        this.world = World.standardWelt();
+        this.fightManager = new FightManager(player, wuerfel);
+        this.fightManager.setCombatEventListener(this);
+        this.phase = null;
     }
 
-    /**
-     * Startet das Spiel (GUI Version)
-     */
-    public void startGame() {
-        if (eventListener != null) {
-            // Show story for the initial room first
-            String roomStory = getRoomStory();
-            eventListener.onStoryDisplay(roomStory);
-            // onRoomChange() will be called after story is read in continueAfterStory()
-
-            eventListener.onPlayerHealthChange(player.getLifeTotal(), player.getMaxLife());
+    public void starteSpiel() {
+        if (player == null) {
+            throw new IllegalStateException("Erst initialisiereSpiel() aufrufen");
         }
-
-        // processCurrentRoom() will be called after story is read
+        sende(new Ereignis.Zustand(aktuellerZustand(), 0));
+        zeigeRaumStory();
     }
 
     /**
-     * Verarbeitet den aktuellen Raum
+     * Enter gedrückt: je nach Phase weiter zum Kampf, zum nächsten Raum oder
+     * zum Sieg
      */
-    private void processCurrentRoom() {
-        Room currentRoom = world.getCurrent_room();
-
-        if (currentRoom.getEnemiesInRoom().length == 0) {
-            notifyLog("Dieser Raum ist leer");
-            checkForNextRoom();
-        } else {
-            startCombat(currentRoom);
+    public void weiter() {
+        if (phase == null) {
+            return;
         }
-    }
-
-    /**
-     * Startet einen Kampf (GUI Version)
-     */
-    private void startCombat(Room room) {
-        if (eventListener != null) {
-            eventListener.onCombatStart();
-            eventListener.onEnemyUpdate(createEnemyArray(room.getEnemiesInRoom()));
-        }
-
-        // Start fight asynchronously - combat will be handled through events
-        fightManager.startFight(room.getEnemiesInRoom());
-    }
-
-    /**
-     * Konvertiert EnemyTypes zu Enemy-Objekten für die GUI
-     */
-    private Enemy[] createEnemyArray(EnemyType[] types) {
-        Enemy[] enemies = new Enemy[types.length];
-        for (int i = 0; i < types.length; i++) {
-            enemies[i] = new Enemy(types[i]);
-        }
-        return enemies;
-    }
-
-    /**
-     * Prüft ob es weitere Räume gibt
-     */
-    private void checkForNextRoom() {
-        if (world.getCurrent_room_number() < world.getRoom_count() - 1) {
-            // Warte auf choice
-            waitingForInput = true;
-            notifyLog("Drücke Enter um in den nächsten Raum zu gehen");
-
-            // Notify UI that we're waiting for room transition input
-            if (eventListener != null) {
-                eventListener.onWaitingForRoomTransition();
+        switch (phase) {
+            case STORY ->
+                starteKampf();
+            case RAUM_ENDE_STORY -> {
+                if (world.hasNextRoom()) {
+                    setzePhase(Spielphase.WARTE_AUF_WEITER, null, 0);
+                    nachricht("Drücke ENTER um in den nächsten Raum zu gehen", NachrichtenTyp.INFO, PAUSE_KURZ);
+                } else {
+                    nachricht("SIEG! Du hast alle Räume gemeistert!", NachrichtenTyp.KAMPF_ENDE, 0);
+                    setzePhase(Spielphase.SIEG, null, 0);
+                }
             }
-        } else {
-            victory();
-        }
-    }
-
-    /**
-     * Verarbeitet Spieler-Input von der GUI
-     */
-    public void handlePlayerInput(String input) {
-        inputQueue.add(input);
-
-        if (waitingForInput) {
-            processInput();
-        }
-    }
-
-    /**
-     * Verarbeitet Spieler-Aktion im Kampf
-     */
-    public void handleCombatAction(int enemyIndex, int finte, int wuchtschlag) {
-        if (eventListener != null) {
-            String action = "Angriff auf Gegner " + (enemyIndex + 1);
-            if (finte > 0) {
-                action += " (Finte Lv." + finte + ")";
+            case WARTE_AUF_WEITER -> {
+                world.naechsterRaum();
+                zeigeRaumStory();
             }
-            if (wuchtschlag > 0) {
-                action += " (Wuchtschlag Lv." + wuchtschlag + ")";
-            }
-            eventListener.onPlayerAction(action);
-        }
-        // Diese Info wird an FightManager weitergegeben
-    }
-
-    private void processInput() {
-        String input = inputQueue.poll();
-        if (input != null) {
-            if (input.equalsIgnoreCase("J") || input.equalsIgnoreCase("Y")) {
-                waitingForInput = false;
-                advanceToNextRoom();
-            } else if (input.equalsIgnoreCase("N")) {
-                // falls man ausruhen + heilen haben will:
-                //
-                // notifyLog("Du ruhst dich aus...");
-                // // Kleine Heilung beim Ausruhen
-                // int healAmount = 5;
-                // player.heal(healAmount);
-                // notifyLog("Du heilst " + healAmount + " HP.");
-                // if (eventListener != null) {
-                //     eventListener.onPlayerHealthChange(player.getLifeTotal(), maxPlayerHealth);
-                // }
-                // 
+            default -> {
+                // in KAMPF, GAME_OVER und SIEG macht enter nichts
             }
         }
     }
 
     /**
-     * Spieler geht zum nächsten Raum
+     * Spieler greift an
+     *
+     * @return false wenn gerade nicht erlaubt oder ungültig
      */
-    public void advanceToNextRoom() {
-        if (world.hasNextRoom()) {
-            world.advance_to_next_room();
+    public boolean spielerAngriff(int zielIndex, int finte, int wuchtschlag) {
+        if (phase != Spielphase.KAMPF) {
+            return false;
+        }
+        return fightManager.executePlayerAction(zielIndex, finte, wuchtschlag);
+    }
 
-            if (eventListener != null) {
-                // Show the full story before room exploration
-                String roomStory = getRoomStory();
-                eventListener.onStoryDisplay(roomStory);
-                // onRoomChange() will be called after story is read in continueAfterStory()
+    private void zeigeRaumStory() {
+        setzePhase(Spielphase.STORY, getAktuellerRaum().story.story, 0);
+    }
+
+    private void starteKampf() {
+        RoomType raum = getAktuellerRaum();
+        setzePhase(Spielphase.KAMPF, null, 0);
+        nachricht(">>> Betreten: " + raum.anzeigeName, NachrichtenTyp.RUNDE, 0);
+        List<Enemy> gegner = new ArrayList<>();
+        for (EnemyType typ : schwierigkeit.gegnerFuer(raum)) {
+            gegner.add(new Enemy(typ, schwierigkeit.gegnerWerte(typ.werte)));
+        }
+        fightManager.startFight(gegner);
+    }
+
+    // === CombatEventListener ===
+    @Override
+    public void onRundenStart(int runde) {
+        if (runde == 1) {
+            nachricht("=== Der Kampf beginnt! ===", NachrichtenTyp.KAMPF_START, PAUSE_NORMAL);
+            sende(new Ereignis.Zustand(aktuellerZustand(), 0));
+        }
+        nachricht("=== Runde " + runde + " ===", NachrichtenTyp.RUNDE, PAUSE_LANG);
+    }
+
+    @Override
+    public void onAngriff(AngriffsErgebnis e) {
+        NachrichtenTyp typ = e.angreiferIstSpieler() ? NachrichtenTyp.SPIELER : NachrichtenTyp.GEGNER;
+
+        if (!e.angreiferIstSpieler()) {
+            nachricht(e.angreifer() + " ist am Zug!", typ, PAUSE_NORMAL);
+        }
+        nachricht(e.angreifer() + " startet den Angriff!", typ, PAUSE_NORMAL);
+        if (e.finte() > 0) {
+            nachricht("Versucht eine Finte (Level " + e.finte() + ") auszuführen...", NachrichtenTyp.SPEZIAL, PAUSE_NORMAL);
+        }
+        if (e.wuchtschlag() > 0) {
+            nachricht("Versucht einen Wuchtschlag (Level " + e.wuchtschlag() + ") auszuführen...", NachrichtenTyp.SPEZIAL, PAUSE_NORMAL);
+        }
+
+        if (!e.getroffen()) {
+            if (e.mitSpezialangriff()) {
+                nachricht("Der Spezialangriff ist fehlgeschlagen!", NachrichtenTyp.SPEZIAL, PAUSE_LANG);
             }
+            nachricht(e.angreifer() + " scheitert " + e.ziel() + " anzugreifen.", typ, PAUSE_LANG);
+            return;
+        }
 
-            notifyLog("Du betrittst: " + roomNames[world.getCurrent_room_number()]);
-            // processCurrentRoom() will be called after story is read
+        if (e.finte() > 0) {
+            nachricht("Die Finte hat geklappt! " + e.ziel() + " ist verwirrt!", NachrichtenTyp.SPEZIAL, PAUSE_LANG);
+        }
+        if (e.wuchtschlag() > 0) {
+            nachricht("Der Wuchtschlag hat geklappt! Zusätzlicher Schaden wird verursacht!", NachrichtenTyp.SPEZIAL, PAUSE_LANG);
+        }
+        nachricht(e.angreifer() + " greift " + e.ziel() + " mit " + e.rohSchaden() + " Schaden an!", NachrichtenTyp.SCHADEN, PAUSE_LANG);
+        nachricht(e.ziel() + " versucht zu parieren...", NachrichtenTyp.PARADE, PAUSE_NORMAL);
+
+        if (e.pariert()) {
+            nachricht(e.ziel() + " pariert erfolgreich!", NachrichtenTyp.PARADE, PAUSE_LANG);
+            return;
+        }
+        nachricht(e.ziel() + " konnte nicht parieren!", NachrichtenTyp.PARADE, PAUSE_LANG);
+        nachricht(e.ziel() + " nimmt " + e.erlittenerSchaden() + " Schaden.", NachrichtenTyp.SCHADEN, PAUSE_KURZ);
+        // hp erst updaten wenn die schadens-nachricht auch zu sehen ist
+        sende(new Ereignis.Zustand(aktuellerZustand(), 0));
+        if (e.zielBesiegt()) {
+            String text = e.angreiferIstSpieler() ? e.ziel() + " wurde besiegt!" : "Du gehst zu Boden...";
+            nachricht(text, NachrichtenTyp.KAMPF_ENDE, PAUSE_NORMAL);
         }
     }
 
-    private void gameOver() {
-        gameRunning = false;
-        notifyLog("GAME OVER - Du wurdest besiegt!");
-        if (eventListener != null) {
-            eventListener.onGameOver();
+    @Override
+    public void onSpielerAmZug() {
+        nachricht("Du bist dran! Wähle deine Aktion.", NachrichtenTyp.INFO, PAUSE_NORMAL);
+    }
+
+    @Override
+    public void onKampfEnde(boolean gewonnen) {
+        if (!gewonnen) {
+            nachricht("GAME OVER - Du wurdest besiegt!", NachrichtenTyp.KAMPF_ENDE, PAUSE_LANG);
+            setzePhase(Spielphase.GAME_OVER, null, PAUSE_VOR_STORY);
+            return;
+        }
+
+        nachricht(">>> Kampf gewonnen!", NachrichtenTyp.KAMPF_ENDE, PAUSE_LANG);
+
+        RoomType raum = getAktuellerRaum();
+        List<String> belohnung = new ArrayList<>();
+        UpgradeType upgrade = raum.getUpgrade();
+        if (upgrade != null) {
+            player.upgrade(upgrade);
+            nachricht("Upgrade: " + upgrade.beschreibung(), NachrichtenTyp.UPGRADE, PAUSE_NORMAL);
+            belohnung.add(upgrade.beschreibung());
+        }
+        int geheilt = player.heal(schwierigkeit.heilungFuer(player.getLifeTotal(), player.getMaxLife()));
+        if (geheilt > 0) {
+            nachricht("Du ruhst dich kurz aus und heilst " + geheilt + " HP.", NachrichtenTyp.UPGRADE, PAUSE_NORMAL);
+            belohnung.add("+" + geheilt + " HP geheilt");
+        }
+        sende(new Ereignis.Zustand(aktuellerZustand(), 0));
+
+        String story = raum.endStory.story;
+        if (!belohnung.isEmpty()) {
+            story += "\n\n(" + String.join(", ", belohnung) + ")";
+        }
+        setzePhase(Spielphase.RAUM_ENDE_STORY, story, PAUSE_VOR_STORY);
+    }
+
+    // === Hilfsmethoden ===
+    private void setzePhase(Spielphase neuePhase, String text, long pause) {
+        this.phase = neuePhase;
+        sende(new Ereignis.Phase(neuePhase, text, pause));
+    }
+
+    private void nachricht(String text, NachrichtenTyp typ, long pause) {
+        sende(new Ereignis.Nachricht(text, typ, pause));
+    }
+
+    private void sende(Ereignis ereignis) {
+        if (listener != null) {
+            listener.onEreignis(ereignis);
         }
     }
 
-    private void victory() {
-        gameRunning = false;
-        notifyLog("SIEG! Du hast alle Räume gemeistert!");
-        if (eventListener != null) {
-            eventListener.onVictory();
+    /**
+     * HP vom Spieler und die noch lebenden Gegner
+     */
+    public AnzeigeZustand aktuellerZustand() {
+        List<AnzeigeZustand.GegnerAnzeige> gegner = new ArrayList<>();
+        if (fightManager != null && fightManager.isKampfLaeuft()) {
+            for (Enemy enemy : fightManager.getEnemiesLeftToRight()) {
+                gegner.add(new AnzeigeZustand.GegnerAnzeige(enemy.getType(), enemy.getLifeTotal(), enemy.getMaxLife()));
+            }
         }
+        return new AnzeigeZustand(player.getLifeTotal(), player.getMaxLife(), List.copyOf(gegner));
     }
 
-    private void notifyLog(String message) {
-        if (eventListener != null) {
-            eventListener.onCombatLogUpdate(message);
-        }
+    // === GETTER ===
+    public Spielphase getPhase() {
+        return phase;
     }
 
-    public FightManager getFightManager() {
-        return fightManager;
+    public boolean wartetAufSpieler() {
+        return phase == Spielphase.KAMPF && fightManager.isWaitingForPlayerAction();
     }
 
     public Player getPlayer() {
@@ -348,239 +274,11 @@ public class GameManager implements FightManager.CombatEventListener {
         return world;
     }
 
-    public boolean isGameRunning() {
-        return gameRunning;
+    public RoomType getAktuellerRaum() {
+        return world.getAktuellerRaum();
     }
 
-    public boolean isWaitingForInput() {
-        return waitingForInput;
-    }
-
-    /**
-     * Gibt den aktuellen raumnamen zurück
-     */
-    public String getCurrentRoomName() {
-        int index = Math.min(world.getCurrent_room_number(), roomNames.length - 1);
-        return roomNames[index];
-    }
-
-    /**
-     * Gibt die aktuelle raumbeschreibung zurück
-     */
-    public String getRoomDescription() {
-        String[] descriptions = { // kurze beschreibungen für exploration
-            "Ein verlassener Eingangsbereich.",
-            "Ein dunkler Flur.",
-            "Eine alte Bibliothek.",
-            "Eine Speisekammer.",
-            "Ein großer Speisesaal.",
-            "Ein wissenschaftliches Labor.",
-            "Ein schwach beleuchteter Korridor.",
-            "Die finale Kammer."
-        };
-
-        int index = Math.min(world.getCurrent_room_number(), descriptions.length - 1);
-        return descriptions[index];
-    }
-
-    /**
-     * Gibt die vollständige Story für den aktuellen Raum zurück
-     */
-    public String getRoomStory() {
-        StoryDatabank[] stories = {
-            StoryDatabank.INTRO_ROOM,
-            StoryDatabank.FLOOR_ROOM,
-            StoryDatabank.PANTRY_1,
-            StoryDatabank.LIBRARY_ROOM,
-            StoryDatabank.DINING_HALL,
-            StoryDatabank.LABORATORY,
-            StoryDatabank.CORRIDOR,
-            StoryDatabank.FINAL_ROOM
-        };
-
-        int index = Math.min(world.getCurrent_room_number(), stories.length - 1);
-        return StoryDatabank.getStory(stories[index]);
-    }
-
-    /**
-     * Gets the exit story for the current room after combat is finished
-     */
-    public String getExitStory() {
-        StoryDatabank[] exitStories = {
-            StoryDatabank.INTRO_ROOM_END,
-            StoryDatabank.FLOOR_ROOM_END,
-            StoryDatabank.PANTRY_1_END,
-            StoryDatabank.LIBRARY_ROOM_END,
-            StoryDatabank.DINING_HALL_END,
-            StoryDatabank.LABORATORY_END,
-            StoryDatabank.CORRIDOR_END,
-            StoryDatabank.FINAL_ROOM_END
-        };
-
-        int index = Math.min(world.getCurrent_room_number(), exitStories.length - 1);
-        return StoryDatabank.getStory(exitStories[index]);
-    }
-
-    // === CombatEventListener Implementation ===
-    @Override
-    public void onRoundStart(int roundNumber) {
-        if (eventListener != null && eventListener instanceof GameplayScreen) {
-            ((GameplayScreen) eventListener).onCombatMessage("=== Runde " + roundNumber + " ===", FightManager.CombatMessageType.ROUND_START);
-        } else {
-            notifyLog("=== Runde " + roundNumber + " ===");
-        }
-    }
-
-    @Override
-    public void onCombatMessage(String message) {
-        notifyLog(message);
-    }
-
-    @Override
-    public void onCombatMessage(String message, FightManager.CombatMessageType messageType) {
-        // Forward colored message to UI if it supports it
-        if (eventListener != null && eventListener instanceof GameplayScreen) {
-            ((GameplayScreen) eventListener).onCombatMessage(message, messageType);
-        } else {
-            // Fallback to regular message
-            notifyLog(message);
-        }
-    }
-
-    @Override
-    public void onQueuedCombatMessage(String message, FightManager.CombatMessageType messageType, long delayMs) {
-        // Forward queued message to UI if it supports it
-        if (eventListener != null && eventListener instanceof GameplayScreen) {
-            ((GameplayScreen) eventListener).onQueuedCombatMessage(message, messageType, delayMs);
-        } else {
-            // Fallback to regular message
-            notifyLog(message);
-        }
-    }
-
-    @Override
-    public void onPlayerTurn() {
-        // Notify GUI that it's the player's turn and should show combat input
-        notifyLog("Du bist dran! Wähle deine Aktion.");
-    }
-
-    @Override
-    public void onEnemyTurn(Enemy enemy) {
-        // überflüssig
-    }
-
-    @Override
-    public void onPlayerHealthUpdate(int current, int max) {
-        if (eventListener != null) {
-            eventListener.onPlayerHealthChange(current, max);
-        }
-    }
-
-    @Override
-    public void onEnemyHealthUpdate(Enemy[] enemies) {
-        if (eventListener != null) {
-            eventListener.onEnemyUpdate(enemies);
-        }
-    }
-
-    @Override
-    public void onCombatEnd(boolean playerWon) {
-        if (eventListener != null) {
-            eventListener.onCombatEnd(playerWon);
-        }
-
-        if (!playerWon) {
-            gameOver();
-        } else {
-            notifyLog("Kampf gewonnen!");
-            // Show exit story after combat victory, before next room transition
-            showExitStoryAndUpgrade();
-        }
-    }
-
-    /**
-     * Shows exit story and applies room upgrade after combat victory
-     */
-    private void showExitStoryAndUpgrade() {
-        if (eventListener != null) {
-            // Get the exit story for the current room
-            String exitStory = getExitStory();
-            if (exitStory != null && !exitStory.trim().isEmpty()) {
-                // Apply the room upgrade before showing the story
-                applyRoomUpgrade();
-
-                // Show the exit story
-                eventListener.onStoryDisplay(exitStory);
-                // After story is read, continueAfterExitStory() will be called
-            } else {
-                // No exit story for this room, go directly to next room check
-                checkForNextRoom();
-            }
-        } else {
-            checkForNextRoom();
-        }
-    }
-
-    /**
-     * Method for GUI to call when exit story reading is finished
-     */
-    public void continueAfterExitStory() {
-        checkForNextRoom();
-    }
-
-    /**
-     * Method for GUI to call when player makes combat action
-     */
-    public void executeCombatAction(int targetEnemyIndex, int finteLevel, int wuchtschlagLevel) {
-        if (fightManager != null && fightManager.isWaitingForPlayerAction()) {
-            fightManager.executePlayerAction(targetEnemyIndex, finteLevel, wuchtschlagLevel);
-        }
-    }
-
-    /**
-     * Method for GUI to call when story reading is finished
-     */
-    public void continueAfterStory() {
-        if (eventListener != null) {
-            int roomNum = world.getCurrent_room_number();
-            String roomName = roomNames[Math.min(roomNum, roomNames.length - 1)];
-            eventListener.onRoomChange(roomNum, world.getRoom_count(), roomName);
-        }
-        processCurrentRoom();
-    }
-
-    /**
-     * Applies room-specific upgrade based on the current room Should be called
-     * when showing exit stories after clearing a room
-     */
-    public void applyRoomUpgrade() {
-        int currentRoomIndex = world.getCurrent_room_number();
-
-        // Get the RoomType from the world's room list
-        RoomType[] gameRooms = {
-            RoomType.INTRO_ROOM,
-            RoomType.FLOOR_ROOM,
-            RoomType.PANTRY_1,
-            RoomType.LIBRARY_ROOM,
-            RoomType.DINING_HALL,
-            RoomType.LABORATORY,
-            RoomType.CORRIDOR,
-            RoomType.FINAL_ROOM
-        };
-
-        if (currentRoomIndex >= 0 && currentRoomIndex < gameRooms.length) {
-            RoomType currentRoomType = gameRooms[currentRoomIndex];
-            RoomUpgrade roomUpgrade = RoomUpgrade.getUpgradeForRoom(currentRoomType);
-
-            if (roomUpgrade != null && roomUpgrade.getUpgradeType() != null) {
-                UpgradeType upgradeType = roomUpgrade.getUpgradeType();
-                player.upgrade(upgradeType);
-                if (eventListener != null) {
-                    eventListener.onPlayerHealthChange(player.getLifeTotal(), player.getMaxLife());
-                }
-
-                notifyLog("Upgrade angewendet: " + upgradeType.name());
-            }
-        }
+    public Schwierigkeit getSchwierigkeit() {
+        return schwierigkeit;
     }
 }
